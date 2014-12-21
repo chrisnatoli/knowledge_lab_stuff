@@ -2,31 +2,29 @@ import csv
 import os
 import sys
 import gc
+import string
 
 directory = 'monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 
 dates = []
 all_words = set()
-monthly_words = dict()
-monthly_word_totals = dict()
+monthly_text = dict()
 for filename in filenames:
-    gc.collect()
+    #gc.collect()
 
     date = (int(filename[ :4]), int(filename[5:-4]))
     dates.append(date)
 
     with open(directory+filename) as fp:
-        # Read the text into a list of words.
         abstracts = fp.read()
         punctuation = (',','"',"'",'.','(',')',':')
         for p in punctuation:
-            abstracts = abstracts.replace(p,'')
-        words = abstracts.lower().split()
+            abstracts = abstracts.replace(p,'').lower()
+        monthly_text[date] = abstracts
 
+        words = abstracts.split()
         all_words.update(set(words))
-        monthly_words[date] = words
-        monthly_word_totals[date] = len(words)
 
     print(date)
 
@@ -46,10 +44,21 @@ header = ['word', 'first appearance', 'term frequency', 'num months']
 table = [header]
 for word in all_words:
     # 1) Not seen in any preceding months
+    first_apearance = None
     for date in dates:
-        if word in monthly_words[date]:
-            first_appearance = date
+        if first appearance is not None:
             break
+        s = ''
+        for char in monthly_text[date]:
+            if char in string.whitespace:
+                if word == s:
+                    first_apearance = date
+                    break
+                else:
+                    s = ''
+            else:
+                s = s + char
+
     if (first_appearance <= start_date
         or first_appearance > end_date
         or first_appearance == dates[-1]):
@@ -57,8 +66,17 @@ for word in all_words:
 
     # 2) A minimum frequency in the following months. I'd say 25~50
     # might be good starting place.
-    raw_freq = sum([ monthly_words[date].count(word) for date in dates
-                  if date > first_appearance ])
+    raw_freq = 0
+    for date in dates:
+        if date <= first_appearance:
+            continue
+        for char in monthly_date[date]:
+            if char in string.whitespace:
+                if word == s:
+                    raw_freq = raw_freq + 1
+                s = ''
+            else:
+                s = s + char
     '''
     if raw_freq <= min_freq:
         continue
@@ -68,10 +86,22 @@ for word in all_words:
     # the word occurs. Maybe 10~20 would be good. Alternatively, you
     # could look for words that occur in N% of the following
     # months. Maybe 50%?
-    num_months = len([ date for date in dates
-                       if (date > first_appearance and
-                           word in monthly_words[date]) ])
-    total = len([ date for date in dates if date > first_appearance ])
+    num_months = 0
+    word_is_found = False
+    for date in dates:
+        if date <= first_appearance or word_is_found:
+            continue
+        for char in monthly_text[date]:
+            if char in string.whitespace:
+                if word == s:
+                    word_is_found = True
+                    num_months = num_months + 1
+                    break
+                else:
+                    s = ''
+            else:
+                s = s + char
+    total = len(dates) - dates.index(first_appearance) - 1
     density = num_months / total
     if density <= min_density:
         continue
