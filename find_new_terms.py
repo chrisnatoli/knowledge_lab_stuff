@@ -4,6 +4,8 @@ import sys
 import gc
 import string
 
+print('start')
+
 # To conserve memory, this is a generator that effectively does the
 # same job as a string's split function with whitespace as delimiter.
 def split_generator(s):
@@ -15,7 +17,7 @@ def split_generator(s):
         else:
             word = word + char
 
-directory = 'monthly_abstracts/'
+directory = '../klab/monthly_abstracts-todo/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 
 # Create a dictionary mapping from the date to a string containing the
@@ -32,33 +34,37 @@ for filename in filenames:
     date = (int(filename[ :4]), int(filename[5:-4]))
     dates.append(date)
 
+    print(date)
+
     with open(directory+filename) as fp:
-        abstracts = fp.read()
-        punctuation = (',','"',"'",'.','(',')',':')
+        abstracts = fp.read().lower()
+        punctuation = (',','"',"'",'.','(',')',':','--','---',
+                       '#','[',']','{','}','!','?','$','%')
         for p in punctuation:
-            abstracts = abstracts.replace(p,'').lower()
+            abstracts = abstracts.replace(p,' {} '.format(p))
         monthly_text[date] = abstracts
 
         words = abstracts.split()
         all_words.update(set(words))
-
-    print(date)
 
 print('FINISHED READING IN DATA')
 
 dates.sort()
 all_words = sorted(list(all_words))
 
+print(len(all_words))
+
 # Search for new words by filtering out the candidates in all_words.
 # The dates range from start_date (inclusive) to end_date (exclusive).
 # When a new word is found, add it and its data to the table.
 start_date = (1970,1)
-end_date = (2000,1)
+end_date = (2100,1)
 min_freq = 50
 min_density = 0.8
 header = ['word', 'first appearance', 'term frequency', 'num months']
 table = [header]
 for word in all_words:
+    print(word)
     # The first filter is that a word is new if it is not seen in
     # previous months. This is implemented by finding the date of
     # first appearance and checking if that date is before the defined
@@ -71,37 +77,37 @@ for word in all_words:
             if w == word:
                 first_appearance = date
                 break
-    if (first_appearance <= start_date
+    if (first_appearance is None
+        or first_appearance <= start_date
         or first_appearance > end_date
         or first_appearance == dates[-1]):
         continue
 
+    # Run the next two filters simultaneously to save time:
     # The second filter is that a word must attain a minimum frequency
     # across the entirety of text in the following months. Trying min
-    # of 25-50.
-    raw_freq = 0
-    for date in dates:
-        if date <= first_appearance:
-            continue
-        for w in split_generator(monthly_text[date]):
-            if w == word:
-                raw_freq = raw_freq + 1
-    ''' # Currently this filter is not being used.
-    if raw_freq <= min_freq:
-        continue
-    '''
-
+    # of 25 to 50.
     # The third filter is that the word must occur in a minimum number
-    # of months out of the following months (i.e.,
-    # "density"). Shooting for densities much higher than 50%.
+    # of months out of the following months (i.e., "density").
+    # Shooting for densities much higher than 50%.
+    raw_freq = 0
     num_months = 0
     for date in dates:
         if date <= first_appearance:
             continue
+        word_in_month = False
         for w in split_generator(monthly_text[date]):
             if w == word:
-                num_months = num_months + 1
-                break
+                raw_freq = raw_freq + 1
+                word_in_month = True
+        if word_in_month:
+            num_months = num_months + 1
+    # Second filter:
+    '''
+    if raw_freq <= min_freq:
+        continue
+    '''
+    # Third filter
     total = len(dates) - dates.index(first_appearance) - 1
     density = num_months / total
     if density <= min_density:
