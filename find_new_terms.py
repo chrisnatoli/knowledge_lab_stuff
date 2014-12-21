@@ -2,7 +2,6 @@ import csv
 import os
 from datetime import datetime
 import multiprocessing
-import gc
 
 
 the_beginning = datetime.now()
@@ -148,7 +147,7 @@ print('There are {} new words.\n'.format(len(new_words)))
 # After finding all the new words, get some data about them: their
 # first appearance, the number of months they appear in, and their
 # term frequency in the entire corpus.
-header = ['word', 'first appearance', 'num months', 'term freqency']
+header = ['word', 'first appearance', 'num months', 'term frequency']
 table = []
 
 # First find the word's first appearance and the number of months
