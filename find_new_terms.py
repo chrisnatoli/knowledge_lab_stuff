@@ -1,11 +1,8 @@
 import csv
 import os
-from sklearn.feature_extraction.text import CountVectorizer
-import numpy as np
 
-directory = 'monthly_abstracts/'
+directory = '../klab/monthly_abstracts-todo/'
 filenames = sorted([ f for f in os.listdir(directory) ])
-fullpaths = [ directory+f for f in filenames ]
 dates = sorted([ (int(filename[ : len('YYYY')]),
                   int(filename[len('YYYY-') : -len('.txt')]))
                  for filename in filenames ])
@@ -17,20 +14,29 @@ def preprocess(text):
     for p in punctuation:
         text = text.replace(p,' {} '.format(p))
     return text
-
 def tokenize(text):
     return text.split()
 
-vectorizer = CountVectorizer(input='filename',
-                             preprocessor=preprocess,
-                             tokenizer=tokenize)
-counts = vectorizer.fit_transform(fullpaths).toarray()
-all_words = vectorizer.get_feature_names()
+# Collect a set of all words in the entire corpus.
+all_words = set()
+for filename in filenames:
+    print('Collecting words from '+filename)
+    with open(directory+filename) as fp:
+        all_words.update(set(tokenize(preprocess(fp.read()))))
+all_words = sorted(list(all_words))
 
-print('CORPUS IS VECTORIZED')
+# Construct a 2d list "counts" where each row is a filename
+# and each column is a word count for a particular word.
+# Same method as CountVectorizer.
+counts = []
+for filename in filenames:
+    print('Computing word counts from '+filename)
+    with open(directory+filename) as fp:
+        words = tokenize(preprocess(fp.read()))
+        counts.append([ words.count(word) for word in all_words ])
 
 start_date = (1970,1)
-end_date = (2100,1)
+end_date = (2100,1)#(2000,1)
 min_freq = 50
 min_density = 0.8
 header = ['word', 'first appearance', 'term freqency', 'num months']
@@ -64,7 +70,7 @@ for word in all_words:
     # appearance, where x% = min_density.
     num_months = len([ date for date in dates
                        if (date > first_appearance and
-                           counts[dates.index(date)][all_words.index(word)] > 0) ])
+                           counts[dates.index(date)][all_words.index(word)]>0)])
     total = len(dates) - dates.index(first_appearance) - 1
     density = num_months / total
     if density <= min_density:
@@ -79,7 +85,7 @@ for word in all_words:
 
 
 # Compose the printout for testing:
-new_words = [ row[0] for row in table ]
+new_words = [ row[0] for row in table[1:] ]
 printout = '''min_density = {}
 start_date = {}
 end_date = {}
