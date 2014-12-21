@@ -6,14 +6,10 @@ import gc
 directory = 'monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 
-# Construct the following dictionary of dictionaries:
-# monthly_word_counts : date --> dictionary(word --> word count for that date).
-# Also construct a dictionary for total word counts:
-# monthly_word_totals : date --> total number of words for that date.
 dates = []
-monthly_word_counts = dict()
-monthly_word_totals = dict()
 all_words = set()
+monthly_words = dict()
+monthly_word_totals = dict()
 for filename in filenames:
     gc.collect()
 
@@ -28,18 +24,8 @@ for filename in filenames:
             abstracts = abstracts.replace(p,'')
         words = abstracts.lower().split()
 
-        # Construct this date's dictionary : word --> word count.
-        word_counts = { word:0 for word in all_words }
-        for word in words:
-            if word not in all_words:
-                all_words.add(word)
-                for d in monthly_word_counts.keys():
-                    monthly_word_counts[d][word] = 0
-                word_counts[word] = 1
-            else:
-                word_counts[word] = word_counts[word] + 1
-
-        monthly_word_counts[date] = word_counts
+        all_words.update(set(words))
+        monthly_words[date] = words
         monthly_word_totals[date] = len(words)
 
     print(date)
@@ -50,17 +36,18 @@ dates.sort()
 all_words = sorted(list(all_words))
 
 # Search for new words by filtering out the candidates in all_words.
+# The dates range from start_date (inclusive) to end_date (exclusive).
+# When a new word is found, add it and its data to the table.
 start_date = (1970,1)
 end_date = (2000,1)
 min_freq = 50
 min_density = 0.8
-new_words = []
 header = ['word', 'first appearance', 'term frequency', 'num months']
 table = [header]
 for word in all_words:
     # 1) Not seen in any preceding months
     for date in dates:
-        if monthly_word_counts[date][word] > 0:
+        if word in monthly_words[date]:
             first_appearance = date
             break
     if (first_appearance <= start_date
@@ -68,11 +55,11 @@ for word in all_words:
         or first_appearance == dates[-1]):
         continue
 
-    '''
     # 2) A minimum frequency in the following months. I'd say 25~50
     # might be good starting place.
-    raw_freq = sum([ monthly_word_counts[date][word] for date in dates
-                     if date > first_appearance ])
+    raw_freq = sum([ monthly_words[date].count(word) for date in dates
+                  if date > first_appearance ])
+    '''
     if raw_freq <= min_freq:
         continue
     '''
@@ -83,7 +70,7 @@ for word in all_words:
     # months. Maybe 50%?
     num_months = len([ date for date in dates
                        if (date > first_appearance and
-                           monthly_word_counts[date][word] > 0) ])
+                           word in monthly_words[date]) ])
     total = len([ date for date in dates if date > first_appearance ])
     density = num_months / total
     if density <= min_density:
@@ -95,7 +82,6 @@ for word in all_words:
     # months it occurs in after the first appearance.
     table.append([ word, '{}-{}'.format(date[0],date[1]),
                    raw_freq, num_months ])
-
 
 # Compose the printout for testing:
 new_words = [ row[0] for row in table ]
