@@ -1,104 +1,75 @@
 import csv
 import os
+from datetime import datetime
 
-directory = '../klab/monthly_abstracts-todo/'
+the_beginning = datetime.now()
+
+directory = 'monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
-dates = sorted([ (int(filename[ : len('YYYY')]),
-                  int(filename[len('YYYY-') : -len('.txt')]))
-                 for filename in filenames ])
 
-def preprocess(text):
-    text = text.lower()
-    punctuation = (',','"',"'",'.','(',')',':','--','---',
-                   '#','[',']','{','}','!','?','$','%',';')
-    for p in punctuation:
-        text = text.replace(p,' {} '.format(p))
-    return text
-def tokenize(text):
-    return text.split()
-
-# Collect a set of all words in the entire corpus.
-all_words = set()
+# Read the corpus into a dictionary from dates to a string containing
+# that date's text.
+monthly_text = dict()
 for filename in filenames:
-    print('Collecting words from '+filename)
+    start_time = datetime.now()
+
+    date =  (int(filename[ : len('YYYY')]),
+             int(filename[len('YYYY-') : -len('.txt')]))
+
     with open(directory+filename) as fp:
-        all_words.update(set(tokenize(preprocess(fp.read()))))
-all_words = sorted(list(all_words))
+        text = fp.read().lower()
+        punctuation = (',','"',"'",'.','(',')',':','--','---',
+                       '#','[',']','{','}','!','?','$','%',';')
+        for p in punctuation:
+            text = text.replace(p,' {} '.format(p))
+        monthly_text[date] = text
 
-# Construct a 2d list "counts" where each row is a filename
-# and each column is a word count for a particular word.
-# Same method as CountVectorizer.
-counts = []
-for filename in filenames:
-    print('Computing word counts from '+filename)
-    with open(directory+filename) as fp:
-        words = tokenize(preprocess(fp.read()))
-        counts.append([ words.count(word) for word in all_words ])
+    print('Text for {} was read in {}'.format(str(date),
+                                              str(datetime.now()-start_time)))
 
-start_date = (1970,1)
-end_date = (2100,1)#(2000,1)
-min_freq = 50
-min_density = 0.8
-header = ['word', 'first appearance', 'term freqency', 'num months']
-table = [header]
-# For every word in the corpus, check that it passes a few filters in
-# order to be considered a new word. If it does, add it to the table
-# along with some information about it.
-for word in all_words:
-    print(word)
+dates = sorted(monthly_text.keys())
 
-    # First filter:
-    # Word does not appear before start_date.
-    for date in dates:
-        if counts[dates.index(date)][all_words.index(word)] != 0:
-            first_appearance = date
+print('All text was read in ' + str(datetime.now() - the_beginning))
+
+# Consider each month's text as a set of candidate new words. Subtract
+# from this set all words in previous months. Intersect the remainder
+# with all future months.
+start_date = (1960,1)#(2007,3)#
+end_date = (2005,1)#(2009,1)#
+new_words = set()
+for date in [ d for d in dates if start_date <= d < end_date ]:
+    print('\nConsidering the candidate set of words from '+str(date))
+    start_time = datetime.now()
+
+    candidates = set(monthly_text[date].split())
+
+    # Subtract from the candidates all words in previous months, to
+    # ensure that the candidates are new.
+    for past_date in [ d for d in dates if d < date ]:
+        candidates = candidates.difference(
+            set(monthly_text[past_date].split()))
+    if not candidates:
+        print('No candidates left after subtraction with previous months.')
+        print('This loop took '+str(datetime.now() - start_time))
+        continue
+
+    # Intersect the candidates with all words in the following months,
+    # to ensure that the candidates are at least somewhat important terms.
+    for future_date in [ d for d in dates if d > date ]:
+        candidates = candidates.intersection(
+            set(monthly_text[future_date].split()))
+        if not candidates:
+            print('No candidates left after intersecting with {}'.format(
+                    future_date))
+            print('This loop took '+str(datetime.now() - start_time))
             break
-    if (first_appearance <= start_date
-        or first_appearance > end_date
-        or first_appearance == dates[-1]):
-        continue
-
-    # Second filter:
-    # Word occurs at least min_freq times after its first appearance.
-    raw_freq = sum([ counts[dates.index(date)][all_words.index(word)]
-                     for date in dates if date > first_appearance ])
-    #if raw_freq <= min_freq:
-    #    continue
-
-    # Third filter:
-    # Word occurs in at least x% of the months following its first
-    # appearance, where x% = min_density.
-    num_months = len([ date for date in dates
-                       if (date > first_appearance and
-                           counts[dates.index(date)][all_words.index(word)]>0)])
-    total = len(dates) - dates.index(first_appearance) - 1
-    density = num_months / total
-    if density <= min_density:
-        continue
-    
-    # If the word passes all the filters, then add it to the table.
-    # The header of the table is as follows: word, date of first
-    # appearance, raw term frequency after first appearance, number of
-    # months it occurs in after the first appearance.
-    table.append([ word, '{}-{}'.format(date[0],date[1]),
-                   raw_freq, num_months ])
-
-
-# Compose the printout for testing:
-new_words = [ row[0] for row in table[1:] ]
-printout = '''min_density = {}
-start_date = {}
-end_date = {}
-
-number of new words = {}
-
-new words:
-{}
-'''.format(min_density, start_date, end_date,
-           len(new_words), ' '.join(new_words))
-print(printout)
-
-output_filename = 'new_words.csv'
-with open(output_filename, 'w', newline='') as fp:
-    writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-    writer.writerows(table)
+    else:
+        # If there are any candidates left, add them to new_words.
+        print('Updating new words with the following:\n{}'.format(
+                candidates))
+        print('This loop took '+str(datetime.now() - start_time))
+        new_words.update(candidates)
+        
+print('\nEntire script complete in '+str(datetime.now() - the_beginning))
+print(new_words)
+print(len(new_words))
