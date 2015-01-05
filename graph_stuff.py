@@ -70,3 +70,12 @@ plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 plt.savefig('scatter_kl_mean_vs_std.png')
 plt.close()
+
+# Also dump the scores, means, and stddevs into plaintext files so
+# they'll be easy to read into R.
+output_directory = 'tmp/'
+output_filenames = ['all_KLs','all_KL_means','all_KL_stddevs']
+output_data = [kls, kl_avgs.values(), kl_stddevs.values() ]
+for i,filename in enumerate(output_filenames):
+    with open(output_directory + filename, 'w') as fp:
+        fp.write('\n'.join([ str(x) for x in output_data[i] ]))
