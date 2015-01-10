@@ -33,7 +33,7 @@ plt.close()
 # - one of the mean KL score for each new word, and
 # - another of stddev of the KL scores for each new word.
 # Also make a scatterplot of tuples (mean, stddev) for each word.
-input_filename = 'new_word_KL_scores.txt'
+input_filename = 'new_word_KLcotf_scores.txt'
 kl_scores = dict()
 with open(input_filename) as fp:
     for line in fp:
@@ -47,20 +47,20 @@ with open(input_filename) as fp:
 kls = []
 for word in kl_scores.keys():
     kls.extend(kl_scores[word])
-plt.hist(kls, bins=25)
-plt.savefig('hist_of_kl_scores.png')
+plt.hist(kls, bins=50)
+plt.savefig('hist_of_KLcotf_scores.png')
 plt.close()
 
 kl_avgs = { word : np.mean(scores) for (word,scores) in kl_scores.items()
             if scores != [] }
-plt.hist(list(kl_avgs.values()), bins=25)
-plt.savefig('hist_of_kl_avgs.png')
+plt.hist(list(kl_avgs.values()), bins=50)
+plt.savefig('hist_of_KLcotf_avgs.png')
 plt.close()
 
 kl_stddevs = { word : np.std(scores) for (word,scores) in kl_scores.items() 
                if scores != [] }
-plt.hist(list(kl_stddevs.values()), bins=25)
-plt.savefig('hist_of_kl_stddevs.png')
+plt.hist(list(kl_stddevs.values()), bins=50)
+plt.savefig('hist_of_KLcotf_stddevs.png')
 plt.close()
 
 xs = [ kl_avgs[word] for word in kl_scores.keys() if kl_scores[word] != [] ]
@@ -68,7 +68,7 @@ ys = [ kl_stddevs[word] for word in kl_scores.keys() if kl_scores[word] != [] ]
 plt.scatter(xs,ys,s=1)
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
-plt.savefig('scatter_kl_mean_vs_std.png')
+plt.savefig('scatter_KLcotf_mean_vs_std.png')
 plt.close()
 
 # Also dump the scores, means, and stddevs into plaintext files so

@@ -22,7 +22,7 @@ with open(new_words_filename) as fp:
     next(reader)
     new_words_table = [ row for row in reader ]
 
-# Construct a dictionary from new words to a list of symmetric KL scores
+# Construct a dictionary from new words to a list of KL scores
 # for that word over time, when available.
 kl_scores = dict()
 kl_filenames = sorted([ f for f in os.listdir(kl_directory) if '.csv' in f ])
@@ -43,14 +43,14 @@ for new_word_row in new_words_table:
             reader = csv.reader(fp)
             for row in reader:
                 if row[kl_header.index('term')] == new_word:
-                    scores.append(row[kl_header.index('sym_KL_div')])
+                    scores.append(row[kl_header.index('KL(co,tf)')])
 
         print('Found KL divergence for {} at {}'.format(new_word, date))
 
     kl_scores[new_word] = scores
 
 # Dump them all in a file.
-output_filename = 'new_word_KL_scores.txt'
+output_filename = 'new_word_KLcotf_scores.txt'
 with open(output_filename, 'w') as fp:
     for word in sorted(kl_scores.keys()):
         scores = ','.join(kl_scores[word])
