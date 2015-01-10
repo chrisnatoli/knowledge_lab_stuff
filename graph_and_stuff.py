@@ -87,10 +87,10 @@ for i,filename in enumerate(output_filenames):
 # Use a normal distribution to sample words from the two peaks of the
 # bimodal distribution of words.
 kl_avgs = sorted([ (avg,word) for (word,avg) in kl_avgs.items() ])
-left_peak = 1.7
-right_peak = 1.9
-stddev = 0.3
-num_samples = 200
+left_peak = 1.9
+right_peak = 2.1
+stddev = 0.03
+num_samples = 400
 left_words = set()
 right_words = set()
 
