@@ -63,8 +63,8 @@ plt.close()
 
 
 
-# Make another scatterplot of tuples 9mean, stddev) for only new
-# words, where the point is colored by the year of the word's
+# Make another scatterplot of tuples (mean, stddev) for only new
+# words, where the point is colored by the time of the word's
 # first appearance.
 def string_to_date(date):
     return (int(date[ : len('YYYY')]), int(date[len('YYYY-') : ]))
@@ -79,15 +79,62 @@ first_appearances = { row[header.index('word')] :
                         string_to_date(row[header.index('first appearance')])
                       for row in table }
 
-xs = [ kl_means['new'][word] for word in kl_scores['new'].keys() ]
-ys = [ kl_stddevs['new'][word] for word in kl_scores['new'].keys() ]
-cs = [ plt.cm.coolwarm((first_appearances[word][0]-1970)/(2000-1970))
-       for word in kl_scores['new'].keys() ]
-plt.scatter(xs, ys, s=1, color=cs)
+means = [ kl_means['new'][word] for word in kl_scores['new'].keys() ]
+stddevs = [ kl_stddevs['new'][word] for word in kl_scores['new'].keys() ]
+colors = [ plt.cm.coolwarm((first_appearances[word][0]-1970)/(2000-1970))
+           for word in kl_scores['new'].keys() ]
+fig, ax = plt.subplots()
+ax.set_axis_bgcolor('0.25')
+ax.scatter(stddevs, means, s=1, color=colors)
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 plt.savefig('plots/scatter_symKL_mean_vs_std_with_yr.png')
 plt.close()
+
+
+
+# More scatterplots: mean vs time and mean vs stddev.
+years = [ first_appearances[word][0] + float(first_appearances[word][1]-1)/12
+          for word in kl_scores['new'].keys() ]
+plt.scatter(means, years, s=1)
+plt.xlabel('Year of first appearance')
+plt.ylabel('Mean KL score of a given word over time')
+plt.savefig('plots/scatter_mean_KL_vs_first_appearance.png')
+plt.close()
+
+plt.scatter(stddevs, years, s=1)
+plt.xlabel('Year of first appearance')
+plt.ylabel('Standard deviation of KL scores of a given word over time')
+plt.savefig('plots/scatter_stddev_KL_vs_first_appearance.png')
+plt.close()
+
+
+
+# Rather than look at mean and stddev of a word over the entire duration of the
+# word's time series, just look at the next n years (approximately). Check
+# out the colored scatterplot and the histograms of means and stddevs again.
+num_years = 8
+partial_means = [ np.mean(scores[:num_years*12]) for (w,scores) 
+                  in kl_scores['new'].items() ]
+partial_stddevs = [ np.std(scores[:num_years*12]) for (w,scores)
+                    in kl_scores['new'].items() ]
+fig, ax = plt.subplots()
+ax.set_axis_bgcolor('0.25')
+ax.scatter(partial_stddevs, partial_means, s=1, color=colors)
+plt.xlabel('Mean KL score of a given word over {} years'.format(num_years))
+plt.ylabel('Standard deviation of KL scores of a given word over {} years'
+           .format(num_years))
+plt.savefig('plots/scatter_symKL_partial_mean_vs_std_with_yr.png')
+plt.close()
+
+plt.hist(partial_means, bins=70)
+plt.savefig('plots/hist_of_symKL_partial{}_means.png'.format(num_years))
+plt.close()
+ 
+plt.hist(partial_stddevs, bins=70)
+plt.savefig('plots/hist_of_symKL_partial{}_stddevs.png'.format(num_years))
+plt.close()
+ 
 
 
 
