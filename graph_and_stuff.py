@@ -10,8 +10,7 @@ KLs_filename = '_word_symKL_scores.txt'
 # - one of all KL scores for all new words,
 # - one of the mean KL score for each new word, and
 # - another of stddev of the KL scores for each new word.
-#oldnew = ('old','new')
-oldnew = ['new']
+oldnew = ('old','new')
 kl_scores = dict()
 flat_kl_scores = dict()
 kl_means = dict()
@@ -63,7 +62,7 @@ plt.close()
 
 
 
-# Make another scatterplot of tuples (mean, stddev) for only new
+# Make a scatterplot of tuples (mean, stddev) for only new
 # words, where the point is colored by the time of the word's
 # first appearance.
 def string_to_date(date):
@@ -85,7 +84,7 @@ colors = [ plt.cm.coolwarm((first_appearances[word][0]-1970)/(2000-1970))
            for word in kl_scores['new'].keys() ]
 fig, ax = plt.subplots()
 ax.set_axis_bgcolor('0.25')
-ax.scatter(stddevs, means, s=1, color=colors)
+ax.scatter(means, stddevs, s=1, color=colors)
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 plt.savefig('plots/scatter_symKL_mean_vs_std_with_yr.png')
@@ -124,7 +123,8 @@ ax.scatter(partial_stddevs, partial_means, s=1, color=colors)
 plt.xlabel('Mean KL score of a given word over {} years'.format(num_years))
 plt.ylabel('Standard deviation of KL scores of a given word over {} years'
            .format(num_years))
-plt.savefig('plots/scatter_symKL_partial_mean_vs_std_with_yr.png')
+plt.savefig('plots/scatter_symKL_partial{}_mean_vs_std_with_yr.png'
+            .format(num_years))
 plt.close()
 
 plt.hist(partial_means, bins=70)
