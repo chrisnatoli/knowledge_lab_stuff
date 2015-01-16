@@ -41,6 +41,7 @@ for new_word_row in new_words_table:
     
         with open(kl_directory+filename) as fp:
             reader = csv.reader(fp)
+            next(reader)
             for row in reader:
                 if row[kl_header.index('term')] == new_word:
                     scores.append(row[kl_header.index('KL(co,tf)')])
