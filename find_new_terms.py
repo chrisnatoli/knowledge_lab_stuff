@@ -147,7 +147,8 @@ print('There are {} new words.\n'.format(len(new_words)))
 # After finding all the new words, get some data about them: their
 # first appearance, the number of months they appear in, and their
 # term frequency in the entire corpus.
-header = ['word', 'first appearance', 'num months', 'term frequency']
+header = ['word', 'first appearance', 'num months',
+          'term frequency', 'relative term frequency']
 table = []
 
 # Find the word's first appearance and the number of months
@@ -169,7 +170,7 @@ for word in new_words:
           .format(word, datetime.now()-start_time))
 
 # Delete the monthly_words dictionary to free up memory
-# to read in the corpus as strings.
+# to read in the corpus in parts.
 for key in list(monthly_words.keys()):
     del monthly_words[key]
 del monthly_words
@@ -179,20 +180,21 @@ del monthly_words
 # Then compute the word frequencies within those parts.
 filenames_partition = partition([ f for f in filenames
                                   if filename_to_date(f) >= start_date ],
-                                3)
+                                5)
 word_frequencies = { word:0 for word in new_words }
+total_num_words = { word:0 for word in new_words }
 
 for sublist in filenames_partition:
     start_time = datetime.now()
 
-    # Read in all the text for those dates in the sublist.
-    monthly_text = dict()
+    # Read in all the words for those dates in the sublist.
+    monthly_words = dict()
     for filename in sublist:
         start_time2 = datetime.now()
 
         date = filename_to_date(filename)
         with open(directory+filename) as fp:
-            monthly_text[date] = preprocess(fp.read())
+            monthly_words[date] = preprocess(fp.read()).split()
 
         print('Text for {} was read (again) in {}'
               .format(date, datetime.now()-start_time2))
@@ -210,15 +212,20 @@ for sublist in filenames_partition:
         first_appearance = row[header.index('first appearance')]
 
         frequency = 0
+        num_words = 0
         dates_sublist = [ filename_to_date(f) for f in sublist ]
         for date in [ d for d in dates_sublist if d >= first_appearance ]:
-            frequency += monthly_text[date].count(word)
+            frequency += monthly_words[date].count(word)
+            num_words += len(monthly_words[date])
         word_frequencies[word] += frequency
+        total_num_words[word] += num_words
 
         print('Frequency of "{}" in this sublist was computed in {}'
               .format(word, datetime.now()-start_time2))
 
-    del monthly_text
+    for key in list(monthly_words.keys()):
+        del monthly_words[key]
+    del monthly_words
 
     print('Frequencies for this sublist were computed in {}\n'
           .format(datetime.now()-start_time))
@@ -228,6 +235,7 @@ for sublist in filenames_partition:
 for row in table:
     word = row[header.index('word')]
     row.append(word_frequencies[word])
+    row.append(word_frequencies[word] / total_num_words[word])
 
     date = row[header.index('first appearance')]
     row[header.index('first appearance')] = '{}-{}'.format(date[0],date[1])
