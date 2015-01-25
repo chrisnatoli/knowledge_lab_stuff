@@ -18,7 +18,7 @@ kls_filename = '_word_symKL_scores.csv'
 # - one of all KL scores for all words,
 # - one of the mean KL score for each word, and
 # - another of stddev of the KL scores for each word.
-oldnew = ('old','new')
+oldnew = ['old','new']
 words = dict()
 kl_scores = dict()
 flat_kl_scores = dict()
@@ -44,12 +44,24 @@ for when in oldnew:
     flat_kl_scores[when] = []
     kl_means[when] = []
     kl_stddevs[when] = []
+    new_words_left_mode = []
+    new_words_right_mode = []
     for word in words[when]:
         scores = remove_nones(kl_scores[when][word])
         if scores != []:
             flat_kl_scores[when].extend(scores)
-            kl_means[when].append(np.mean(scores))
+            mean = np.mean(scores)
+            kl_means[when].append(mean)
             kl_stddevs[when].append(np.std(scores))
+
+            # Also, sort words according to which mode they're in in the
+            # bimodal distribution of KL means. The cutoff of 2.04 was
+            # eyeballed from the histogram.
+            if mean < 2.04:
+                new_words_left_mode.append(word)
+            else:
+                new_words_right_mode.append(word)
+
 
     # Plot a histogram of all KL scores.
     plt.hist(flat_kl_scores[when], bins=50)
@@ -88,11 +100,14 @@ plt.close()
 new_words_filename = 'new_words.csv'
 with open(new_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
-    header = next(reader)
-    table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
-first_appearances = { row[header.index('word')]
-                      : string_to_date(row[header.index('first appearance')])
-                      for row in table }
+    new_words_header = next(reader)
+    new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+first_appearances = { row[new_words_header.index('word')]
+                      : string_to_date(row[new_words_header.index('first appearance')])
+                      for row in new_words_table }
+term_freqs = { row[new_words_header.index('word')]
+               : float(row[new_words_header.index('term frequency') ])
+               for row in new_words_table }
 colors = [ plt.cm.coolwarm((first_appearances[word][0]-1970)/(2000-1970))
            for word in words['new']
            if remove_nones(kl_scores['new'][word]) != [] ]
@@ -162,34 +177,72 @@ for num_years in [5,8]:
  
 
 
-# Line plot
-def error_bars(xs):
-    num_samples = 500
+# Time series plot of KL scores for batches of old and new words.
+fig, ax = plt.subplots()
+
+def error_bars(xs, alpha):
+    num_samples = 300
     means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
                      for i in range(num_samples) ])
-    lower_err = means[int(0.01 * num_samples)]
-    upper_err = means[int(0.99 * num_samples)]
+    lower_err = np.mean(xs) - means[int(alpha/2 * num_samples)]
+    upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
     return (lower_err, upper_err)
 
-time = [ d[0] + float(d[1]-1)/12 for d in dates ]
-old_means = []
-old_lower_errs = []
-old_upper_errs = []
-years = sorted(list(set([ d[0] for d in dates ])))
-for year in years:
-    scores = []
-    for d in [ d for d in dates if d[0] == year ]:
-        scores.extend(remove_nones([ kl_scores['old'][word][dates.index(d)]
-                                     for word in words['old'] ]))
-    mean = np.mean(scores)
-    old_means.append(mean)
-    errs = error_bars(scores)
-    old_lower_errs.append(mean - errs[0])
-    old_upper_errs.append(errs[1] - mean)
+years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
+means = dict()
+lower_errs = dict()
+upper_errs = dict()
+lines = ['Old words','New words','Left mode of new words','Right mode of new words']
+for line in lines:
+    # Compute the means and error bars for each line.
+    means[line] = []
+    lower_errs[line] = []
+    upper_errs[line] = []
+    for year in years:
+        # Rather than plot one point for each month, plot one point for each year.
+        # collapsing across the twelve months.
+        scores = []
+        for d in [ d for d in dates if d[0] == year ]:
+            if line == 'Old words':
+                scores.extend(remove_nones([ kl_scores['old'][word][dates.index(d)]
+                                             for word in words['old'] ]))
+            if line == 'New words':
+                new_words_this_month = [ word for word in words['new']
+                                         if first_appearances[word] == d ]
+                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
+                                             for word in new_words_this_month ]))
+            if line == 'Left mode of new words':
+                left_words_this_month = [ word for word in new_words_left_mode
+                                          if first_appearances[word] == d ]
+                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
+                                             for word in left_words_this_month ]))
+            if line == 'Right mode of new words':
+                right_words_this_month = [ word for word in new_words_right_mode
+                                           if first_appearances[word] == d ]
+                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
+                                             for word in right_words_this_month ]))
+        if scores == []:
+            means[line].append(None)
+            lower_errs[line].append(None)
+            upper_errs[line].append(None)
+        else:
+            means[line].append(np.mean(scores))
+            errs = error_bars(scores, 0.01)
+            lower_errs[line].append(errs[0])
+            upper_errs[line].append(errs[1])
+    
+    # Match the time axis to the number of datapoints.
+    # I.e., if a datapoint isn't available, skip that year.
+    ys = [ y for y in years if means[line][years.index(y)] is not None ]
 
-fig, ax = plt.subplots()
-ax.errorbar(years, old_means, yerr=[old_lower_errs, old_upper_errs])
-ax.set_xlim([1969, 2010])
+    ax.errorbar(ys, remove_nones(means[line]),
+                yerr=[remove_nones(lower_errs[line]),
+                      remove_nones(upper_errs[line])],
+                label=line)
+                      
+    
+ax.set_xlim([1969, 2000])
+plt.legend(loc='lower right')
 plt.savefig('plots/time_series.png')
 plt.close()
 
