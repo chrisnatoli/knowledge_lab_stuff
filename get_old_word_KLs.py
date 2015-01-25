@@ -6,7 +6,7 @@ from datetime import datetime
 
 the_beginning = datetime.now()
 
-old_words_filename = 'old_words.txt'
+old_words_filename = 'old_words.csv'
 kl_directory = 'medline_monthly-KL/'
 kl_header = ['term', 'KL(tf,co)', 'KL(co,tf)', 'sym_KL_div']
 
@@ -19,7 +19,7 @@ def kl_filename_to_date(filename):
 
 # Load in the list of old words.
 with open(old_words_filename) as fp:
-    old_words = sorted([ line.strip() for line in fp ])
+    old_words = sorted([ line.split()[0] for line in fp[1:] ])
 
 # Construct a 2d array of old words and their KL score for every date after
 # and including 1970.

@@ -10,7 +10,7 @@ directory = 'monthly_abstracts/'
 corpus_filenames = sorted([ f for f in os.listdir(directory) ])
 new_words_filename = 'new_words.csv'
 stopwords_filename = 'stopwords.txt'
-output_filename = 'old_words.txt'
+output_filename = 'old_words.csv'
 
 
 # Converts '2007-7.txt' to the tuple (2007,7).
@@ -105,13 +105,67 @@ for word in old_words.copy():
     if not any([ char.isalpha() for char in word ]):
         old_words.remove(word)
 
-
-
-# Dump the output into a plain text list.
 old_words = sorted(list(old_words))
-with open(output_filename, 'w') as fp:
-    fp.write('\n'.join(old_words))
-
-print('\nEntire script finished in '+str(datetime.now() - the_beginning))
+print('\nFinished finding old words in {}'
+      .format(datetime.now() - the_beginning))
 print(old_words)
 print('There are {} old words.\n'.format(len(old_words)))
+
+
+
+
+# After finding all the old words, get some data about them:
+# the number of months they appear in (document frequency) and their
+# term frequency in the entire corpus.
+header = ['word', 'num months', 'term frequency']
+table = []
+
+# First get their document frequency using the monthly_words dictionary.
+for word in old_words:
+    start_time = datetime.now()
+
+    num_months = 0
+    for date in [ d for d in dates if d >= start_date ]:
+        if word in monthly_words[date]:
+            num_months += 1
+
+    table.append([word, num_months])
+
+    print('Data about "{}" was computed in {}'
+          .format(word, datetime.now()-start_time))
+
+# Delete the monthly_words dictionary to free up memory.
+for key in list(monthly_words.keys()):
+    del monthly_words[key]
+del monthly_words
+
+# Collect the word frequency of each old word from all files after the
+# start date.
+word_frequencies = { word:0 for word in old_words }
+
+for filename in [ f for f in corpus_filenames if filename_to_date(f) >= start_date]:
+    start_time = datetime.now()
+
+    with open(directory+filename) as fp:
+        words = preprocess(fp.read()).split()
+
+    for old_word in old_words:
+        word_frequencies[old_word] += words.count(old_word)
+
+    print('Word frequencies from {} were collected in {}'
+          .format(filename, datetime.now()-start_time))
+
+# Prepare the table for output.
+for row in table:
+    word = row[header.index('word')]
+    row.append(word_frequencies[word])
+
+table.sort()
+table.insert(0, header)
+
+# Write the table to file.
+with open(output_filename, 'w', newline='') as fp:
+    writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+    writer.writerows(table)
+
+print('\nEntire script finished in '+str(datetime.now() - the_beginning))

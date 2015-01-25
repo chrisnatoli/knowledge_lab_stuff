@@ -150,7 +150,7 @@ print('There are {} new words.\n'.format(len(new_words)))
 header = ['word', 'first appearance', 'num months', 'term frequency']
 table = []
 
-# First find the word's first appearance and the number of months
+# Find the word's first appearance and the number of months
 # it appears in by using the monthly sets of words.
 for word in new_words:
     start_time = datetime.now()
@@ -240,4 +240,3 @@ with open(output_filename, 'w', newline='') as fp:
     writer.writerows(table)
 
 print('\nEntire script finished in '+str(datetime.now() - the_beginning))
-
