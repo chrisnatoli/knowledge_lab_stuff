@@ -94,37 +94,91 @@ plt.close()
 
 
 
-# Make a scatterplot of tuples (mean, stddev) for only new
-# words, where the point is colored by the time of the word's
-# first appearance.
+# Make three scatterplots of tuples (mean, stddev) for only new
+# words, where a point is colored by
+# -- the time of the word's first appearance,
+# -- the term frequency of the word,
+# -- the document frequency of the word (i.e., number of months
+#    in which it appeared).
+# -- the relative document frequency of the word (i.e., number
+#    of months in which it appeared divided by the number of months
+#    after and including its first appearance).
+cmap = plt.cm.coolwarm
 new_words_filename = 'new_words.csv'
 with open(new_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     new_words_header = next(reader)
     new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
-first_appearances = { row[new_words_header.index('word')]
-                      : string_to_date(row[new_words_header.index('first appearance')])
-                      for row in new_words_table }
+
+first_appearances = dict()
+for row in new_words_table:
+    word = row[new_words_header.index('word')]
+    date = string_to_date(row[new_words_header.index('first appearance')])
+    first_appearances[word] = date[0] + (date[1]-1)/12
+
 term_freqs = { row[new_words_header.index('word')]
                : float(row[new_words_header.index('term frequency') ])
                for row in new_words_table }
-colors = [ plt.cm.coolwarm((first_appearances[word][0]-1970)/(2000-1970))
-           for word in words['new']
-           if remove_nones(kl_scores['new'][word]) != [] ]
 
-fig, ax = plt.subplots()
-ax.set_axis_bgcolor('0.25')
-ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=colors)
-plt.xlabel('Mean KL score of a given word over time')
-plt.ylabel('Standard deviation of KL scores for a given word over time')
-plt.savefig('plots/scatter_symKL_mean_vs_std_with_yr.png')
-plt.close()
+doc_freqs = { row[new_words_header.index('word')]
+               : float(row[new_words_header.index('num months') ])
+               for row in new_words_table }
+
+rel_doc_freqs = dict()
+for row in new_words_table:
+    word = row[new_words_header.index('word')]
+    first = string_to_date(row[new_words_header.index('first appearance')])
+    doc_freq = float(row[new_words_header.index('num months')])
+    total = len([ d for d in dates if d >= first ]) 
+    rel_doc_freqs[word] = doc_freq / total
+
+for z in [first_appearances, term_freqs, doc_freqs, rel_doc_freqs]:
+    # Normalize the color values so that they're in [0,1].
+    if z == first_appearances:
+        minn = 1970
+        maxx = 2000
+    else:
+        minn = min(z.values())
+        maxx = max(z.values())
+    colors = [ (z[word] - minn) / (maxx - minn)
+               for word in words['new']
+               if remove_nones(kl_scores['new'][word]) != [] ]
+    colors.extend([0, 1])
+
+    fig, ax = plt.subplots()
+    ax.set_axis_bgcolor('0.25')
+    sc = ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=cmap(colors))
+
+    m = plt.cm.ScalarMappable(cmap=cmap)
+    m.set_array(colors)
+    cbar = plt.colorbar(m, ticks=[0,1])
+    if z == first_appearances:
+        cbar.set_ticklabels(['1970','2000'])
+    else:
+        cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
+
+    plt.xlabel('Mean KL score of a given word over time')
+    plt.ylabel('Standard deviation of KL scores for a given word over time')
+    if z == first_appearances:
+        cbar.set_label('First appearance')
+        colored_by = 'yr'
+    elif z == term_freqs:
+        cbar.set_label('Term frequency')
+        colored_by = 'tf'
+    elif z == doc_freqs:
+        cbar.set_label('Document frequency')
+        colored_by = 'df'
+    elif z == rel_doc_freqs:
+        cbar.set_label('Relative document frequency')
+        colored_by = 'rdf'
+    plt.savefig('plots/scatter_symKL_mean_vs_std_colored_by_{}.png'
+                .format(colored_by))
+    plt.close()
 
 
 
 # More scatterplots: mean vs date of first appearance and stddev vs date.
-firsts = [ first_appearances[word][0] + float(first_appearances[word][1]-1)/12
-           for word in words['new']
+firsts = [ first_appearances[word] for word in words['new']
            if remove_nones(kl_scores['new'][word]) != [] ]
 plt.scatter(firsts, kl_means['new'], s=1)
 plt.xlabel('Date of first appearance')
@@ -143,6 +197,10 @@ plt.close()
 # Rather than look at mean and stddev of a word over the entire duration of the
 # word's time series, just look at the next n years. Check
 # out the colored scatterplot and the histograms of means and stddevs again.
+first_appearances = { row[new_words_header.index('word')]
+                      : string_to_date(row[
+                          new_words_header.index('first appearance')])
+                      for row in new_words_table }
 for num_years in [5,8]:
     partial_means = []
     partial_stddevs = []
@@ -155,7 +213,7 @@ for num_years in [5,8]:
         if scores != []:
             partial_means.append(np.mean(scores))
             partial_stddevs.append(np.std(scores))
-            colors.append(plt.cm.coolwarm((start[0]-1970)/(2000-1970)))
+            colors.append(cmap((start[0]-1970)/(2000-1970)))
     
     fig, ax = plt.subplots()
     ax.set_axis_bgcolor('0.25')
