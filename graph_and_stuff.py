@@ -147,7 +147,7 @@ for z in [first_appearances, term_freqs, doc_freqs, rel_doc_freqs]:
 
     fig, ax = plt.subplots()
     ax.set_axis_bgcolor('0.25')
-    sc = ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=cmap(colors))
+    ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=cmap(colors))
 
     m = plt.cm.ScalarMappable(cmap=cmap)
     m.set_array(colors)
@@ -235,9 +235,34 @@ for num_years in [5,8]:
  
 
 
+
+
 # Time series plot of KL scores for batches of old and new words.
 fig, ax = plt.subplots()
+years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
 
+# For every date whose month is January, plot a line for the mean KL score
+# of the batch of words whose first appearance is that date.
+for date in [ d for d in dates if d < (2000,0) and d[1] == 1 ]:
+    batch = [ word for word in words['new'] if first_appearances[word] == date ]
+    scores = dict()
+    for d in [ d for d in dates if d >= date ]:
+        s = remove_nones([ kl_scores['new'][w][dates.index(d)] for w in batch ])
+        scores[d] = np.mean(s) if s != [] else None
+    ds = [ d[0] + (d[1]-1)/12 for d in dates
+           if d >= date and scores[d] is not None ]
+    scores = remove_nones([ scores[k] for k in sorted(list(scores.keys())) ])
+    if scores == []:
+        continue
+    ax.plot(ds, scores, color='k', alpha=0.2)
+    ax.plot([ds[0]], [scores[0]], color='k', marker='o', markersize=3)
+        
+# Now plot the mean KL scores for four big batches of words:
+# -- all old words,
+# -- all new words,
+# -- the left mode of new words,
+# -- the right mode of new words.
+# Also plot error bars for the means, acquired via bootstrapping.
 def error_bars(xs, alpha):
     num_samples = 300
     means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
@@ -246,11 +271,11 @@ def error_bars(xs, alpha):
     upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
     return (lower_err, upper_err)
 
-years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
 means = dict()
 lower_errs = dict()
 upper_errs = dict()
-lines = ['Old words','New words','Left mode of new words','Right mode of new words']
+lines = ['Old words','New words',
+         'Left mode of new words','Right mode of new words']
 for line in lines:
     # Compute the means and error bars for each line.
     means[line] = []
@@ -291,20 +316,37 @@ for line in lines:
     
     # Match the time axis to the number of datapoints.
     # I.e., if a datapoint isn't available, skip that year.
-    ys = [ y for y in years if means[line][years.index(y)] is not None ]
+    yrs = [ yr for yr in years if means[line][years.index(yr)] is not None ]
 
-    ax.errorbar(ys, remove_nones(means[line]),
+    if line == 'Old words':
+        color = 'purple'
+        width = 1
+    elif line == 'New words':
+        color = 'r'
+        width = 2
+    elif line == 'Left mode of new words':
+        color = 'b'
+        width = 1
+    elif line == 'Right mode of new words':
+        color = 'g'
+        width = 1
+    ax.errorbar(yrs, remove_nones(means[line]),
                 yerr=[remove_nones(lower_errs[line]),
                       remove_nones(upper_errs[line])],
+                linewidth=width, color=color,
                 label=line)
                       
-    
+plt.legend(loc='lower right', prop={'size':8})
+plt.xlabel('Time')
+plt.ylabel('Symmetric KL divergence')
+
 ax.set_xlim([1969, 2000])
-plt.legend(loc='lower right')
-plt.savefig('plots/time_series.png')
+plt.savefig('plots/time_series.png', dpi=200)
+
+ax.set_xlim([1976, 2000])
+ax.set_ylim([1.2, 2.3])
+plt.savefig('plots/time_series_zoom.png', dpi=200)
 plt.close()
-
-
 
 
 
