@@ -12,23 +12,29 @@ def remove_nones(xs):
 
 
 
-kls_filename = '_word_symKL_scores.csv'
 
-# For both old and new words, plot three histograms:
-# - one of all KL scores for all words,
-# - one of the mean KL score for each word, and
-# - another of stddev of the KL scores for each word.
-oldnew = ['old','new']
+# Unpack the table of new words.
+new_words_filename = 'new_words.csv'
+with open(new_words_filename) as fp:
+    reader = csv.reader(fp, delimiter=',')
+    new_words_header = next(reader)
+    new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+    
+# Unpack the KL score data and compute means and stddevs for each word.
+kls_filename = '_word_symKL_scores.csv'
+wordtypes = ['old','new','stop']
 words = dict()
 kl_scores = dict()
 flat_kl_scores = dict()
 kl_means = dict()
 kl_stddevs = dict()
-for when in oldnew:
+new_words_left_mode = []
+new_words_right_mode = []
+for wordtype in wordtypes:
     # Load the data into a dictionary from words to lists of scores.
-    kl_scores[when] = dict()
-    words[when] = []
-    with open(when + kls_filename) as fp:
+    kl_scores[wordtype] = dict()
+    words[wordtype] = []
+    with open(wordtype + kls_filename) as fp:
         dates = [ string_to_date(s) for s in
                   fp.readline().strip().split(',')[1:] ]
         for line in fp:
@@ -36,61 +42,73 @@ for when in oldnew:
             word = tokens[0]
             scores = [ float(score) if score != '' else None
                        for score in tokens[1:] ]
-            kl_scores[when][word] = scores
-            words[when].append(word)
+            kl_scores[wordtype][word] = scores
+            words[wordtype].append(word)
     
     # Generate lists of KL scores, ignoring empty datapoints and
     # words that lack KL scores.
-    flat_kl_scores[when] = []
-    kl_means[when] = []
-    kl_stddevs[when] = []
-    new_words_left_mode = []
-    new_words_right_mode = []
-    for word in words[when]:
-        scores = remove_nones(kl_scores[when][word])
+    flat_kl_scores[wordtype] = []
+    kl_means[wordtype] = []
+    kl_stddevs[wordtype] = []
+    for word in words[wordtype]:
+        scores = remove_nones(kl_scores[wordtype][word])
         if scores != []:
-            flat_kl_scores[when].extend(scores)
+            flat_kl_scores[wordtype].extend(scores)
             mean = np.mean(scores)
-            kl_means[when].append(mean)
-            kl_stddevs[when].append(np.std(scores))
+            kl_means[wordtype].append(mean)
+            kl_stddevs[wordtype].append(np.std(scores))
 
-            # Also, sort words according to which mode they're in in the
+            # Also, sort new words according to which mode they're in the
             # bimodal distribution of KL means. The cutoff of 2.04 was
             # eyeballed from the histogram.
-            if mean < 2.04:
-                new_words_left_mode.append(word)
-            else:
-                new_words_right_mode.append(word)
+            if wordtype == 'new':
+                if mean < 2.04:
+                    new_words_left_mode.append(word)
+                else:
+                    new_words_right_mode.append(word)
 
 
-    # Plot a histogram of all KL scores.
-    plt.hist(flat_kl_scores[when], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_scores.png'.format(when))
+
+# For both old and new words, plot three histograms:
+# - one of all KL scores for all words,
+# - one of the mean KL score for each word, and
+# - another of stddev of the KL scores for each word.
+for wordtype in wordtypes[:2]:
+    plt.hist(flat_kl_scores[wordtype], bins=50)
+    plt.savefig('plots/hist_of_{}_symKL_scores.png'.format(wordtype))
     plt.close()
     
-    # Plot a histogram of the mean KL score for each word, collapsing
-    # a word's KL scores over time.
-    plt.hist(kl_means[when], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_means.png'.format(when))
+    plt.hist(kl_means[wordtype], bins=50)
+    plt.savefig('plots/hist_of_{}_symKL_means.png'.format(wordtype))
     plt.close()
     
-    # Plot a histogram of the stddev of KL scores for each word, collapsing
-    # a word's KL scores over time.
-    plt.hist(kl_stddevs[when], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_stddevs.png'.format(when))
+    plt.hist(kl_stddevs[wordtype], bins=50)
+    plt.savefig('plots/hist_of_{}_symKL_stddevs.png'.format(wordtype))
     plt.close()
 
 
 
 # Make a single scatterplot of tuples (mean, stddev) for
-# both old and new word.
-for when in oldnew:
-    plt.scatter(kl_means[when], kl_stddevs[when], s=1,
-                color='green' if when == 'old' else 'blue')
+# old words, new words, and stopwords.
+for wordtype in wordtypes:
+    if wordtype == 'old':
+        color = 'purple'
+        label = 'Old words'
+    if wordtype == 'new':
+        color = 'r'
+        label = 'New words'
+    if wordtype == 'stop':
+        color = 'c'
+        label = 'Stopwords'
+    plt.scatter(kl_means[wordtype], kl_stddevs[wordtype],
+                s=1, color=color, label=label)
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
-plt.savefig('plots/scatter_symKL_mean_vs_std_old_and_new.png')
+plt.legend(loc='lower right', prop={'size':8})
+plt.savefig('plots/scatter_symKL_mean_vs_std_all_words.png')
 plt.close()
+
+
 
 
 
@@ -104,11 +122,6 @@ plt.close()
 #    of months in which it appeared divided by the number of months
 #    after and including its first appearance).
 cmap = plt.cm.coolwarm
-new_words_filename = 'new_words.csv'
-with open(new_words_filename) as fp:
-    reader = csv.reader(fp, delimiter=',')
-    new_words_header = next(reader)
-    new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
 
 first_appearances = dict()
 for row in new_words_table:
@@ -255,7 +268,9 @@ for date in [ d for d in dates if d < (2000,0) and d[1] == 1 ]:
     if scores == []:
         continue
     ax.plot(ds, scores, color='k', alpha=0.2)
-    ax.plot([ds[0]], [scores[0]], color='k', marker='o', markersize=3)
+    ax.plot([ds[0]], [scores[0]], 'ko', markersize=3)
+    #ax.plot([ds[0]], [scores[0]], marker='o', markerfacecolor='none',
+    #        markeredgewidth=1.5, markersize=len(batch))
         
 # Now plot the mean KL scores for four big batches of words:
 # -- all old words,
@@ -274,7 +289,7 @@ def error_bars(xs, alpha):
 means = dict()
 lower_errs = dict()
 upper_errs = dict()
-lines = ['Old words','New words',
+lines = ['Old words','Stopwords','New words',
          'Left mode of new words','Right mode of new words']
 for line in lines:
     # Compute the means and error bars for each line.
@@ -289,6 +304,9 @@ for line in lines:
             if line == 'Old words':
                 scores.extend(remove_nones([ kl_scores['old'][word][dates.index(d)]
                                              for word in words['old'] ]))
+            if line == 'Stopwords':
+                scores.extend(remove_nones([ kl_scores['stop'][word][dates.index(d)]
+                                             for word in words['stop'] ]))
             if line == 'New words':
                 new_words_this_month = [ word for word in words['new']
                                          if first_appearances[word] == d ]
@@ -320,21 +338,29 @@ for line in lines:
 
     if line == 'Old words':
         color = 'purple'
-        width = 1
+        width = 2
+        style = '-'
+    if line == 'Stopwords':
+        color = 'c'
+        width = 2
+        style = '-'
     elif line == 'New words':
         color = 'r'
         width = 2
+        style = '-'
     elif line == 'Left mode of new words':
         color = 'b'
-        width = 1
+        width = 2
+        style = '-'
     elif line == 'Right mode of new words':
         color = 'g'
-        width = 1
+        width = 2
+        style = '-'
     ax.errorbar(yrs, remove_nones(means[line]),
                 yerr=[remove_nones(lower_errs[line]),
                       remove_nones(upper_errs[line])],
-                linewidth=width, color=color,
-                label=line)
+                linewidth=width, color=color, linestyle=style,
+                label=line, alpha=0.5)
                       
 plt.legend(loc='lower right', prop={'size':8})
 plt.xlabel('Time')
@@ -357,49 +383,49 @@ plt.close()
 
 # The distribution of all KL scores for old words has a strange left hump.
 # dump all these words into a file to examine them qualitatively.
-left_hump = dict()
-for (word,scores) in kl_scores['old'].items():
-    for score in remove_nones(scores):
-        if 0.5 < score < 0.75:
-            if word in left_hump.keys():
-                left_hump[word] += 1
-            else:
-                left_hump[word] = 1
-output_filename = 'left_hump_old_words.txt'
-with open(output_filename, 'w') as fp:
-    for (word, count) in sorted(left_hump.items()):
-        fp.write('{}: {}\n'.format(word, count))
-
-
-
-# Use a normal distribution to sample words from the two peaks of the
-# bimodal distribution of new words.
-mean_pairs = []
-for word in words['new']:
-    scores = remove_nones(kl_scores['new'][word])
-    if scores != []:
-        mean_pairs.append((np.mean(scores), word))
-mean_pairs.sort()
-left_peak = 1.9
-right_peak = 2.1
-stddev = 0.03
-num_samples = 400
-left_words = set()
-right_words = set()
-
-for peak in (left_peak, right_peak):
-    for i in range(num_samples):
-        r = np.random.randn() * stddev + peak
-        for (mean, word) in mean_pairs:
-            if mean > r:
-                if peak == left_peak:
-                    left_words.add(word)
-                else:
-                    right_words.add(word)
-                break
-left_filename = 'left_peak.txt'
-with open(left_filename, 'w') as fp:
-    fp.write('\n'.join(sorted(list(left_words))))
-right_filename = 'right_peak.txt'
-with open(right_filename, 'w') as fp:
-    fp.write('\n'.join(sorted(list(right_words))))
+#left_hump = dict()
+#for (word,scores) in kl_scores['old'].items():
+#    for score in remove_nones(scores):
+#        if 0.5 < score < 0.75:
+#            if word in left_hump.keys():
+#                left_hump[word] += 1
+#            else:
+#                left_hump[word] = 1
+#output_filename = 'left_hump_old_words.txt'
+#with open(output_filename, 'w') as fp:
+#    for (word, count) in sorted(left_hump.items()):
+#        fp.write('{}: {}\n'.format(word, count))
+#
+#
+#
+## Use a normal distribution to sample words from the two peaks of the
+## bimodal distribution of new words.
+#mean_pairs = []
+#for word in words['new']:
+#    scores = remove_nones(kl_scores['new'][word])
+#    if scores != []:
+#        mean_pairs.append((np.mean(scores), word))
+#mean_pairs.sort()
+#left_peak = 1.9
+#right_peak = 2.1
+#stddev = 0.03
+#num_samples = 400
+#left_words = set()
+#right_words = set()
+#
+#for peak in (left_peak, right_peak):
+#    for i in range(num_samples):
+#        r = np.random.randn() * stddev + peak
+#        for (mean, word) in mean_pairs:
+#            if mean > r:
+#                if peak == left_peak:
+#                    left_words.add(word)
+#                else:
+#                    right_words.add(word)
+#                break
+#left_filename = 'left_peak.txt'
+#with open(left_filename, 'w') as fp:
+#    fp.write('\n'.join(sorted(list(left_words))))
+#right_filename = 'right_peak.txt'
+#with open(right_filename, 'w') as fp:
+#    fp.write('\n'.join(sorted(list(right_words))))
