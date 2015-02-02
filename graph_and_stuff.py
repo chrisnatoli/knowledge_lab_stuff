@@ -116,6 +116,9 @@ plt.close()
 # words, where a point is colored by
 # -- the time of the word's first appearance,
 # -- the term frequency of the word,
+# -- the relative term frequency of the word (i.e., raw frequency
+#    of the word divided by the number of words in all dates
+#    since and including the date of the word's first appearance),
 # -- the document frequency of the word (i.e., number of months
 #    in which it appeared).
 # -- the relative document frequency of the word (i.e., number
@@ -133,6 +136,11 @@ term_freqs = { row[new_words_header.index('word')]
                : float(row[new_words_header.index('term frequency') ])
                for row in new_words_table }
 
+rel_term_freqs = { row[new_words_header.index('word')]
+                   : float(row[new_words_header.index(
+                           'relative term frequency') ])
+                   for row in new_words_table }
+
 doc_freqs = { row[new_words_header.index('word')]
                : float(row[new_words_header.index('num months') ])
                for row in new_words_table }
@@ -145,7 +153,8 @@ for row in new_words_table:
     total = len([ d for d in dates if d >= first ]) 
     rel_doc_freqs[word] = doc_freq / total
 
-for z in [first_appearances, term_freqs, doc_freqs, rel_doc_freqs]:
+for z in [first_appearances, term_freqs, rel_term_freqs,
+          doc_freqs, rel_doc_freqs]:
     # Normalize the color values so that they're in [0,1].
     if z == first_appearances:
         minn = 1970
@@ -167,6 +176,8 @@ for z in [first_appearances, term_freqs, doc_freqs, rel_doc_freqs]:
     cbar = plt.colorbar(m, ticks=[0,1])
     if z == first_appearances:
         cbar.set_ticklabels(['1970','2000'])
+    elif z == rel_term_freqs:
+        cbar.set_ticklabels(['{0:.4g}'.format(minn), '{0:.4g}'.format(maxx)])
     else:
         cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
 
@@ -178,6 +189,9 @@ for z in [first_appearances, term_freqs, doc_freqs, rel_doc_freqs]:
     elif z == term_freqs:
         cbar.set_label('Term frequency')
         colored_by = 'tf'
+    elif z == rel_term_freqs:
+        cbar.set_label('Relative term frequency')
+        colored_by = 'rtf'
     elif z == doc_freqs:
         cbar.set_label('Document frequency')
         colored_by = 'df'
