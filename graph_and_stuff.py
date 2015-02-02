@@ -136,10 +136,15 @@ term_freqs = { row[new_words_header.index('word')]
                : float(row[new_words_header.index('term frequency') ])
                for row in new_words_table }
 
+log_term_freqs = { word : np.log(tf) for (word, tf) in term_freqs.items() }
+
 rel_term_freqs = { row[new_words_header.index('word')]
                    : float(row[new_words_header.index(
                            'relative term frequency') ])
                    for row in new_words_table }
+
+log_rel_term_freqs = { word : np.log(tf) for (word, tf)
+                       in rel_term_freqs.items() }
 
 doc_freqs = { row[new_words_header.index('word')]
                : float(row[new_words_header.index('num months') ])
@@ -153,8 +158,8 @@ for row in new_words_table:
     total = len([ d for d in dates if d >= first ]) 
     rel_doc_freqs[word] = doc_freq / total
 
-for z in [first_appearances, term_freqs, rel_term_freqs,
-          doc_freqs, rel_doc_freqs]:
+for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
+          log_rel_term_freqs, doc_freqs, rel_doc_freqs]:
     # Normalize the color values so that they're in [0,1].
     if z == first_appearances:
         minn = 1970
@@ -189,9 +194,15 @@ for z in [first_appearances, term_freqs, rel_term_freqs,
     elif z == term_freqs:
         cbar.set_label('Term frequency')
         colored_by = 'tf'
+    elif z == log_term_freqs:
+        cbar.set_label('Log term frequency')
+        colored_by = 'ltf'
     elif z == rel_term_freqs:
         cbar.set_label('Relative term frequency')
         colored_by = 'rtf'
+    elif z == log_rel_term_freqs:
+        cbar.set_label('Log relative term frequency')
+        colored_by = 'lrtf'
     elif z == doc_freqs:
         cbar.set_label('Document frequency')
         colored_by = 'df'
