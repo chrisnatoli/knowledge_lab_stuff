@@ -1,6 +1,7 @@
 import csv
 import numpy as np
 import matplotlib.pylab as plt
+import matplotlib
 
 
 
@@ -279,26 +280,26 @@ for num_years in [5,8]:
 fig, ax = plt.subplots()
 years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
 
-# For every date whose month is January, plot a line for the mean KL score
-# of the batch of words whose first appearance is that date.
-for date in [ d for d in dates if d < (2000,0) and d[1] == 1 ]:
-    batch = [ word for word in words['new'] if first_appearances[word] == date ]
-    scores = dict()
-    for d in [ d for d in dates if d >= date ]:
-        s = remove_nones([ kl_scores['new'][w][dates.index(d)] for w in batch ])
-        scores[d] = np.mean(s) if s != [] else None
-    ds = [ d[0] + (d[1]-1)/12 for d in dates
-           if d >= date and scores[d] is not None ]
-    scores = remove_nones([ scores[k] for k in sorted(list(scores.keys())) ])
-    if scores == []:
-        continue
-    ax.plot(ds, scores, color='k', alpha=0.2)
-    ax.plot([ds[0]], [scores[0]], 'ko', markersize=3)
-    #ax.plot([ds[0]], [scores[0]], marker='o', markerfacecolor='none',
-    #        markeredgewidth=1.5, markersize=len(batch))
+# For every date whose month is, e.g., January, plot a line for each word
+# in the batch of words whose first appearance is that date.
+for m in range(1,13): # Actually, just do this for every month.
+    for date in [ d for d in dates if d < (2000,1) and d[1] == m ]:
+        batch = [ word for word in words['new']
+                  if first_appearances[word] == date ]
+        for word in batch:
+            scores = []
+            ds = []
+            for d in [ d for d in dates if d >= date ]:
+                score = kl_scores['new'][word][dates.index(d)]
+                if score is not None:
+                    scores.append(score)
+                    ds.append(d[0] + (d[1]-1)/12)
+            if scores != []:
+                ax.plot(ds, scores, color='k', alpha=0.01)
         
-# Now plot the mean KL scores for four big batches of words:
+# Now plot the mean KL scores for five big batches of words:
 # -- all old words,
+# -- all stopwords,
 # -- all new words,
 # -- the left mode of new words,
 # -- the right mode of new words.
@@ -371,7 +372,7 @@ for line in lines:
         style = '-'
     elif line == 'New words':
         color = 'r'
-        width = 2
+        width = 3
         style = '-'
     elif line == 'Left mode of new words':
         color = 'b'
@@ -385,7 +386,7 @@ for line in lines:
                 yerr=[remove_nones(lower_errs[line]),
                       remove_nones(upper_errs[line])],
                 linewidth=width, color=color, linestyle=style,
-                label=line, alpha=0.5)
+                label=line, alpha=0.5)#, capsize=9
                       
 plt.legend(loc='lower right', prop={'size':8})
 plt.xlabel('Time')
@@ -397,6 +398,48 @@ plt.savefig('plots/time_series.png', dpi=200)
 ax.set_xlim([1976, 2000])
 ax.set_ylim([1.2, 2.3])
 plt.savefig('plots/time_series_zoom.png', dpi=200)
+plt.close()
+
+
+
+
+
+# Time series of new words (not averaged) colored by date of first appearance.
+fig, ax = plt.subplots()
+
+# First sort the new words by date of first appearance in ascending order.
+pairs = sorted([ (first_appearances[word], word) for word in words['new'] ])
+sorted_words = [ word for (date, word) in pairs ]
+for word in sorted_words:
+    first = first_appearances[word]
+    scores = []
+    ds = []
+    for d in [ d for d in dates if d >= first ]:
+        score = kl_scores['new'][word][dates.index(d)]
+        if score is not None:
+            scores.append(score)
+            ds.append(d[0] + (d[1]-1)/12)
+    first = first[0] + (first[1]-1)/12
+    c = matplotlib.colors.rgb2hex(cmap((first - 1970) / (2000-1970)))
+    if scores != []:
+        ax.plot(ds, scores, alpha=0.05, color=c)
+
+m = plt.cm.ScalarMappable(cmap=cmap)
+m.set_array([0,1])
+cbar = plt.colorbar(m, ticks=[0,1])
+cbar.set_ticklabels(['1970','2000'])
+cbar.set_label('First appearance')
+
+ax.set_axis_bgcolor('0.25')
+plt.xlabel('Time')
+plt.ylabel('Symmetric KL divergence')
+
+ax.set_xlim([1969, 2000])
+plt.savefig('plots/time_series_colored_by_time.png', dpi=200)
+
+ax.set_xlim([1976, 2000])
+ax.set_ylim([1.2, 2.3])
+plt.savefig('plots/time_series_zoom_colored_by_time.png', dpi=200)
 plt.close()
 
 
