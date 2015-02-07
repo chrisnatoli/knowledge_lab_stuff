@@ -295,7 +295,7 @@ for m in range(1,13): # Actually, just do this for every month.
                     scores.append(score)
                     ds.append(d[0] + (d[1]-1)/12)
             if scores != []:
-                ax.plot(ds, scores, color='k', alpha=0.01)
+                ax.plot(ds, scores, color='k', alpha=0.005)
         
 # Now plot the mean KL scores for five big batches of words:
 # -- all old words,
@@ -315,8 +315,8 @@ def error_bars(xs, alpha):
 means = dict()
 lower_errs = dict()
 upper_errs = dict()
-lines = ['Old words','Stopwords','New words',
-         'Left mode of new words','Right mode of new words']
+lines = ['Old words','Stopwords','New words']
+         #'Left mode of new words','Right mode of new words']
 for line in lines:
     # Compute the means and error bars for each line.
     means[line] = []
@@ -363,30 +363,30 @@ for line in lines:
     yrs = [ yr for yr in years if means[line][years.index(yr)] is not None ]
 
     if line == 'Old words':
-        color = 'purple'
+        color = 'b'
         width = 2
         style = '-'
     if line == 'Stopwords':
-        color = 'c'
+        color = 'g'
         width = 2
         style = '-'
     elif line == 'New words':
         color = 'r'
-        width = 3
+        width = 2
         style = '-'
     elif line == 'Left mode of new words':
-        color = 'b'
+        color = 'c'
         width = 2
         style = '-'
     elif line == 'Right mode of new words':
-        color = 'g'
+        color = 'purple'
         width = 2
         style = '-'
     ax.errorbar(yrs, remove_nones(means[line]),
                 yerr=[remove_nones(lower_errs[line]),
                       remove_nones(upper_errs[line])],
                 linewidth=width, color=color, linestyle=style,
-                label=line, alpha=0.5)#, capsize=9
+                label=line, alpha=0.7)#, capsize=9
                       
 plt.legend(loc='lower right', prop={'size':8})
 plt.xlabel('Time')
