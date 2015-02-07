@@ -20,6 +20,13 @@ with open(new_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     new_words_header = next(reader)
     new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+
+# Unpack the table of old words.
+old_words_filename = 'old_words.csv'
+with open(old_words_filename) as fp:
+    reader = csv.reader(fp, delimiter=',')
+    old_words_header = next(reader)
+    old_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
     
 # Unpack the KL score data and compute means and stddevs for each word.
 kls_filename = '_word_symKL_scores.csv'
@@ -93,13 +100,13 @@ for wordtype in wordtypes[:2]:
 # old words, new words, and stopwords.
 for wordtype in wordtypes:
     if wordtype == 'old':
-        color = 'purple'
+        color = 'b'
         label = 'Old words'
     if wordtype == 'new':
         color = 'r'
         label = 'New words'
     if wordtype == 'stop':
-        color = 'c'
+        color = 'g'
         label = 'Stopwords'
     plt.scatter(kl_means[wordtype], kl_stddevs[wordtype],
                 s=1, color=color, label=label)
@@ -113,7 +120,7 @@ plt.close()
 
 
 
-# Make three scatterplots of tuples (mean, stddev) for only new
+# Make multiple scatterplots of tuples (mean, stddev) for only new
 # words, where a point is colored by
 # -- the time of the word's first appearance,
 # -- the term frequency of the word,
@@ -125,7 +132,7 @@ plt.close()
 # -- the relative document frequency of the word (i.e., number
 #    of months in which it appeared divided by the number of months
 #    after and including its first appearance).
-cmap = plt.cm.coolwarm
+coolwarm = plt.cm.coolwarm
 
 first_appearances = dict()
 for row in new_words_table:
@@ -175,9 +182,9 @@ for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
 
     fig, ax = plt.subplots()
     ax.set_axis_bgcolor('0.25')
-    ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=cmap(colors))
+    ax.scatter(kl_means['new'], kl_stddevs['new'], s=1, color=coolwarm(colors))
 
-    m = plt.cm.ScalarMappable(cmap=cmap)
+    m = plt.cm.ScalarMappable(cmap=coolwarm)
     m.set_array(colors)
     cbar = plt.colorbar(m, ticks=[0,1])
     if z == first_appearances:
@@ -216,6 +223,66 @@ for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
 
 
 
+# Make two more scatterplots:
+# -- plot mean vs std of both new and old words colored by term frequency,
+#    with different colormaps,
+# -- do the same for log term frequency.
+summer = plt.cm.summer
+
+old_term_freqs = { row[old_words_header.index('word')]
+                   : float(row[old_words_header.index('term frequency') ])
+                   for row in old_words_table }
+
+log_old_term_freqs = { word : np.log(tf) for (word, tf)
+                       in old_term_freqs.items() }
+
+colored_bys = ['tf', 'ltf']
+for colored_by in colored_bys:
+    fig, ax = plt.subplots()
+    for wordtype in ['old','new']:
+        if wordtype == 'new':
+            cmap = coolwarm
+        elif wordtype == 'old':
+            cmap = summer
+
+        if colored_by == 'tf' and wordtype == 'new':
+            z = term_freqs
+        elif colored_by == 'ltf' and wordtype == 'new':
+            z = log_term_freqs
+        if colored_by == 'tf' and wordtype == 'old':
+            z = old_term_freqs
+        elif colored_by == 'ltf' and wordtype == 'old':
+            z = log_old_term_freqs
+        
+        # Normalize the color values so that they're in [0,1].
+        minn = min(z.values())
+        maxx = max(z.values())
+        colors = [ (z[word] - minn) / (maxx - minn)
+                   for word in words[wordtype]
+                   if remove_nones(kl_scores[wordtype][word]) != [] ]
+
+        ax.set_axis_bgcolor('0.25')
+        ax.scatter(kl_means[wordtype], kl_stddevs[wordtype], s=1,
+                   color=cmap(colors))
+
+        m = plt.cm.ScalarMappable(cmap=cmap)
+        m.set_array([0,1])
+        cbar = plt.colorbar(m, ticks=[0,1])
+        cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
+        if colored_by == 'tf':
+            cbar.set_label('Term frequency of {} words'.format(wordtype))
+        elif colored_by == 'ltf':
+            cbar.set_label('Log term frequency of {} words'.format(wordtype))
+
+    plt.xlabel('Mean KL score of a given word over time')
+    plt.ylabel('Standard deviation of KL scores for a given word over time')
+    plt.savefig('plots/scatter_symKL_mean_vs_std_colored_by_{}_with_old.png'
+                .format(colored_by), dpi=200)
+    plt.close()
+
+
+
+
 # More scatterplots: mean vs date of first appearance and stddev vs date.
 firsts = [ first_appearances[word] for word in words['new']
            if remove_nones(kl_scores['new'][word]) != [] ]
@@ -230,6 +297,7 @@ plt.xlabel('Date of first appearance')
 plt.ylabel('Standard deviation of KL scores of a given word over time')
 plt.savefig('plots/scatter_stddev_KL_vs_first_appearance.png')
 plt.close()
+
 
 
 
@@ -252,7 +320,7 @@ for num_years in [5,8]:
         if scores != []:
             partial_means.append(np.mean(scores))
             partial_stddevs.append(np.std(scores))
-            colors.append(cmap((start[0]-1970)/(2000-1970)))
+            colors.append(coolwarm((start[0]-1970)/(2000-1970)))
     
     fig, ax = plt.subplots()
     ax.set_axis_bgcolor('0.25')
@@ -420,11 +488,11 @@ for word in sorted_words:
             scores.append(score)
             ds.append(d[0] + (d[1]-1)/12)
     first = first[0] + (first[1]-1)/12
-    c = matplotlib.colors.rgb2hex(cmap((first - 1970) / (2000-1970)))
+    c = matplotlib.colors.rgb2hex(coolwarm((first - 1970) / (2000-1970)))
     if scores != []:
         ax.plot(ds, scores, alpha=0.05, color=c)
 
-m = plt.cm.ScalarMappable(cmap=cmap)
+m = plt.cm.ScalarMappable(cmap=coolwarm)
 m.set_array([0,1])
 cbar = plt.colorbar(m, ticks=[0,1])
 cbar.set_ticklabels(['1970','2000'])
