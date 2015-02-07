@@ -27,12 +27,24 @@ with open(old_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     old_words_header = next(reader)
     old_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+
+# Unpack total word counts for each month.
+counts_filename = 'monthly_counts.csv'
+monthly_counts = dict()
+with open(counts_filename) as fp:
+    reader = csv.reader(fp, delimiter=',')
+    next(reader)
+    for row in csv.reader(fp, delimiter=','):
+        date = string_to_date(row[0])
+        count = int(row[1])
+        monthly_counts[date] = count
     
 # Unpack the KL score data and compute means and stddevs for each word.
 kls_filename = '_word_symKL_scores.csv'
 wordtypes = ['old','new','stop']
 words = dict()
 kl_scores = dict()
+relative_kl_scores = dict() # Relative to the size of that date's document.
 flat_kl_scores = dict()
 kl_means = dict()
 kl_stddevs = dict()
@@ -41,6 +53,7 @@ new_words_right_mode = []
 for wordtype in wordtypes:
     # Load the data into a dictionary from words to lists of scores.
     kl_scores[wordtype] = dict()
+    relative_kl_scores[wordtype] = dict()
     words[wordtype] = []
     with open(wordtype + kls_filename) as fp:
         dates = [ string_to_date(s) for s in
@@ -50,7 +63,11 @@ for wordtype in wordtypes:
             word = tokens[0]
             scores = [ float(score) if score != '' else None
                        for score in tokens[1:] ]
+            relative_scores = [ score / monthly_counts[dates[i]]
+                                if score is not None else None
+                                for (i, score) in enumerate(scores) ]
             kl_scores[wordtype][word] = scores
+            relative_kl_scores[wordtype][word] = relative_scores
             words[wordtype].append(word)
     
     # Generate lists of KL scores, ignoring empty datapoints and
@@ -345,128 +362,143 @@ for num_years in [5,8]:
 
 
 # Time series plot of KL scores for batches of old and new words.
-fig, ax = plt.subplots()
+# Make one set of plots for KL scores and another set of plots where KL
+# score of each date is divided by the size of that date's document.
 years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
 
-# For every date whose month is, e.g., January, plot a line for each word
-# in the batch of words whose first appearance is that date.
-for m in range(1,13): # Actually, just do this for every month.
-    for date in [ d for d in dates if d < (2000,1) and d[1] == m ]:
-        batch = [ word for word in words['new']
-                  if first_appearances[word] == date ]
-        for word in batch:
-            scores = []
-            ds = []
-            for d in [ d for d in dates if d >= date ]:
-                score = kl_scores['new'][word][dates.index(d)]
-                if score is not None:
-                    scores.append(score)
-                    ds.append(d[0] + (d[1]-1)/12)
-            if scores != []:
-                ax.plot(ds, scores, color='k', alpha=0.005)
-        
-# Now plot the mean KL scores for five big batches of words:
-# -- all old words,
-# -- all stopwords,
-# -- all new words,
-# -- the left mode of new words,
-# -- the right mode of new words.
-# Also plot error bars for the means, acquired via bootstrapping.
-def error_bars(xs, alpha):
-    num_samples = 300
-    means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
-                     for i in range(num_samples) ])
-    lower_err = np.mean(xs) - means[int(alpha/2 * num_samples)]
-    upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
-    return (lower_err, upper_err)
+for kls in [kl_scores, relative_kl_scores]:
+    fig, ax = plt.subplots()
 
-means = dict()
-lower_errs = dict()
-upper_errs = dict()
-lines = ['Old words','Stopwords','New words']
-         #'Left mode of new words','Right mode of new words']
-for line in lines:
-    # Compute the means and error bars for each line.
-    means[line] = []
-    lower_errs[line] = []
-    upper_errs[line] = []
-    for year in years:
-        # Rather than plot one point for each month, plot one point for each year.
-        # collapsing across the twelve months.
-        scores = []
-        for d in [ d for d in dates if d[0] == year ]:
-            if line == 'Old words':
-                scores.extend(remove_nones([ kl_scores['old'][word][dates.index(d)]
-                                             for word in words['old'] ]))
-            if line == 'Stopwords':
-                scores.extend(remove_nones([ kl_scores['stop'][word][dates.index(d)]
-                                             for word in words['stop'] ]))
-            if line == 'New words':
-                new_words_this_month = [ word for word in words['new']
-                                         if first_appearances[word] == d ]
-                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
-                                             for word in new_words_this_month ]))
-            if line == 'Left mode of new words':
-                left_words_this_month = [ word for word in new_words_left_mode
-                                          if first_appearances[word] == d ]
-                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
-                                             for word in left_words_this_month ]))
-            if line == 'Right mode of new words':
-                right_words_this_month = [ word for word in new_words_right_mode
-                                           if first_appearances[word] == d ]
-                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
-                                             for word in right_words_this_month ]))
-        if scores == []:
-            means[line].append(None)
-            lower_errs[line].append(None)
-            upper_errs[line].append(None)
-        else:
-            means[line].append(np.mean(scores))
-            errs = error_bars(scores, 0.01)
-            lower_errs[line].append(errs[0])
-            upper_errs[line].append(errs[1])
+    # For every date whose month is, e.g., January, plot a line for each word
+    # in the batch of words whose first appearance is that date.
+    for m in range(1,13): # Actually, just do this for every month.
+        for date in [ d for d in dates if d < (2000,1) and d[1] == m ]:
+            batch = [ word for word in words['new']
+                      if first_appearances[word] == date ]
+            for word in batch:
+                scores = []
+                ds = []
+                for d in [ d for d in dates if d >= date ]:
+                    score = kls['new'][word][dates.index(d)]
+                    if score is not None:
+                        scores.append(score)
+                        ds.append(d[0] + (d[1]-1)/12)
+                if scores != []:
+                    ax.plot(ds, scores, color='k', alpha=0.005)
+            
+    # Now plot the mean KL scores for five big batches of words:
+    # -- all old words,
+    # -- all stopwords,
+    # -- all new words,
+    # -- the left mode of new words,
+    # -- the right mode of new words.
+    # Also plot error bars for the means, acquired via bootstrapping.
+    def error_bars(xs, alpha):
+        num_samples = 300
+        means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
+                         for i in range(num_samples) ])
+        lower_err = np.mean(xs) - means[int(alpha/2 * num_samples)]
+        upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
+        return (lower_err, upper_err)
     
-    # Match the time axis to the number of datapoints.
-    # I.e., if a datapoint isn't available, skip that year.
-    yrs = [ yr for yr in years if means[line][years.index(yr)] is not None ]
+    means = dict()
+    lower_errs = dict()
+    upper_errs = dict()
+    lines = ['Old words','Stopwords','New words']
+             #'Left mode of new words','Right mode of new words']
+    for line in lines:
+        # Compute the means and error bars for each line.
+        means[line] = []
+        lower_errs[line] = []
+        upper_errs[line] = []
+        for year in years:
+            # Rather than plot one point for each month, plot one point for each year.
+            # collapsing across the twelve months.
+            scores = []
+            for d in [ d for d in dates if d[0] == year ]:
+                if line == 'Old words':
+                    scores.extend(remove_nones([ kls['old'][word][dates.index(d)]
+                                                 for word in words['old'] ]))
+                if line == 'Stopwords':
+                    scores.extend(remove_nones([ kls['stop'][word][dates.index(d)]
+                                                 for word in words['stop'] ]))
+                if line == 'New words':
+                    new_words_this_month = [ word for word in words['new']
+                                             if first_appearances[word] == d ]
+                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
+                                                 for word in new_words_this_month ]))
+                if line == 'Left mode of new words':
+                    left_words_this_month = [ word for word in new_words_left_mode
+                                              if first_appearances[word] == d ]
+                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
+                                                 for word in left_words_this_month ]))
+                if line == 'Right mode of new words':
+                    right_words_this_month = [ word for word in new_words_right_mode
+                                               if first_appearances[word] == d ]
+                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
+                                                 for word in right_words_this_month ]))
+            if scores == []:
+                means[line].append(None)
+                lower_errs[line].append(None)
+                upper_errs[line].append(None)
+            else:
+                means[line].append(np.mean(scores))
+                errs = error_bars(scores, 0.01)
+                lower_errs[line].append(errs[0])
+                upper_errs[line].append(errs[1])
+        
+        # Match the time axis to the number of datapoints.
+        # I.e., if a datapoint isn't available, skip that year.
+        yrs = [ yr for yr in years if means[line][years.index(yr)] is not None ]
+    
+        if line == 'Old words':
+            color = 'b'
+            width = 2
+            style = '-'
+        if line == 'Stopwords':
+            color = 'g'
+            width = 2
+            style = '-'
+        elif line == 'New words':
+            color = 'r'
+            width = 2
+            style = '-'
+        elif line == 'Left mode of new words':
+            color = 'c'
+            width = 2
+            style = '-'
+        elif line == 'Right mode of new words':
+            color = 'purple'
+            width = 2
+            style = '-'
+    
+        ax.errorbar(yrs, remove_nones(means[line]),
+                    yerr=[remove_nones(lower_errs[line]),
+                          remove_nones(upper_errs[line])],
+                    linewidth=width, color=color, linestyle=style,
+                    label=line, alpha=0.7)#, capsize=9
+    
+    plt.xlabel('Time')
+    plt.ylabel('Symmetric KL divergence')
+    plt.tight_layout()
+    
+    if kls == kl_scores:
+        rel = ''
+        plt.legend(loc='lower right', prop={'size':8})
+    elif kls == relative_kl_scores:
+        rel = '_rel'
+        plt.legend(loc='upper right', prop={'size':8})
 
-    if line == 'Old words':
-        color = 'b'
-        width = 2
-        style = '-'
-    if line == 'Stopwords':
-        color = 'g'
-        width = 2
-        style = '-'
-    elif line == 'New words':
-        color = 'r'
-        width = 2
-        style = '-'
-    elif line == 'Left mode of new words':
-        color = 'c'
-        width = 2
-        style = '-'
-    elif line == 'Right mode of new words':
-        color = 'purple'
-        width = 2
-        style = '-'
-    ax.errorbar(yrs, remove_nones(means[line]),
-                yerr=[remove_nones(lower_errs[line]),
-                      remove_nones(upper_errs[line])],
-                linewidth=width, color=color, linestyle=style,
-                label=line, alpha=0.7)#, capsize=9
-                      
-plt.legend(loc='lower right', prop={'size':8})
-plt.xlabel('Time')
-plt.ylabel('Symmetric KL divergence')
-
-ax.set_xlim([1969, 2000])
-plt.savefig('plots/time_series.png', dpi=200)
-
-ax.set_xlim([1976, 2000])
-ax.set_ylim([1.2, 2.3])
-plt.savefig('plots/time_series_zoom.png', dpi=200)
-plt.close()
+    ax.set_xlim([1969, 2000])
+    plt.savefig('plots/time_series{}.png'.format(rel), dpi=200)
+    
+    ax.set_xlim([1976, 2000])
+    if kls == kl_scores:
+        ax.set_ylim([1.2, 2.3])
+    elif kls == relative_kl_scores:
+        ax.set_ylim([0, 0.000005])
+    plt.savefig('plots/time_series{}_zoom.png'.format(rel), dpi=200)
+    plt.close()
 
 
 
