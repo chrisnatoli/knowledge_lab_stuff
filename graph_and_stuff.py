@@ -94,6 +94,38 @@ for wordtype in wordtypes:
 
 
 
+
+
+
+# 
+date_to_num_new_words = dict()
+for date in [ (y, m) for y in range(1970,2000) for m in range(1,13) ]:
+    date_to_num_new_words[date] = 0
+for word in words['new']:
+    for row in new_words_table:
+        if row[new_words_header.index('word')] == word:
+            date = string_to_date(row[new_words_header.index(
+                                      'first appearance')])
+            break
+    if date in date_to_num_new_words.keys():
+        date_to_num_new_words[date] += 1
+pairs = sorted(date_to_num_new_words.items())
+xs = [ x for (x,y) in pairs ]
+ys = [ y for (x,y) in pairs ]
+fig, ax = plt.subplots()
+ax.bar(range(len(xs)), ys, color='k')
+ax.set_xlim([0, len(xs)])
+ax.set_xticks([ i for i in range(len(xs)) if i % 12 == 0 ])
+ax.set_xticklabels([ '{}-{}'.format(d[0],d[1]) for (i,d) in enumerate(xs)
+                     if i % 12 == 0 ],
+                   rotation=90)
+plt.tick_params(labelsize=8)
+plt.xlabel('Time')
+plt.ylabel('Number of new words')
+plt.tight_layout()
+plt.savefig('plots/new_words_per_date.png', dpi=150)
+plt.close()
+
 # For both old and new words, plot three histograms:
 # - one of all KL scores for all words,
 # - one of the mean KL score for each word, and
@@ -479,17 +511,18 @@ for kls in [kl_scores, relative_kl_scores]:
                     label=line, alpha=0.7)#, capsize=9
     
     plt.xlabel('Time')
-    plt.ylabel('Symmetric KL divergence')
-    plt.tight_layout()
     
     if kls == kl_scores:
         rel = ''
         plt.legend(loc='lower right', prop={'size':8})
+        plt.ylabel('Symmetric KL divergence')
     elif kls == relative_kl_scores:
         rel = '_rel'
         plt.legend(loc='upper right', prop={'size':8})
+        plt.ylabel("Symmetric KL divergence divided by that date's total word count")
 
     ax.set_xlim([1969, 2000])
+    plt.tight_layout()
     plt.savefig('plots/time_series{}.png'.format(rel), dpi=200)
     
     ax.set_xlim([1976, 2000])
