@@ -97,10 +97,9 @@ for wordtype in wordtypes:
 
 
 
-# 
-date_to_num_new_words = dict()
-for date in [ (y, m) for y in range(1970,2000) for m in range(1,13) ]:
-    date_to_num_new_words[date] = 0
+# Make a simple histogram of the number of new words appearing each month.
+date_to_num_new_words = { (y,m):0 for y in range(1970,2000)
+                                  for m in range(1,13) }
 for word in words['new']:
     for row in new_words_table:
         if row[new_words_header.index('word')] == word:
@@ -274,7 +273,7 @@ for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
 
 # Make two more scatterplots:
 # -- plot mean vs std of both new and old words colored by term frequency,
-#    with different colormaps,
+#    with the same colormap,
 # -- do the same for log term frequency.
 summer = plt.cm.summer
 
@@ -289,11 +288,6 @@ colored_bys = ['tf', 'ltf']
 for colored_by in colored_bys:
     fig, ax = plt.subplots()
     for wordtype in ['old','new']:
-        if wordtype == 'new':
-            cmap = coolwarm
-        elif wordtype == 'old':
-            cmap = summer
-
         if colored_by == 'tf' and wordtype == 'new':
             z = term_freqs
         elif colored_by == 'ltf' and wordtype == 'new':
@@ -304,24 +298,32 @@ for colored_by in colored_bys:
             z = log_old_term_freqs
         
         # Normalize the color values so that they're in [0,1].
-        minn = min(z.values())
-        maxx = max(z.values())
+        if colored_by == 'tf':
+            minn = min(list(term_freqs.values()) + list(old_term_freqs.values()))
+            maxx = max(list(term_freqs.values()) + list(old_term_freqs.values()))
+        elif colored_by == 'ltf':
+            minn = min(list(log_term_freqs.values())
+                       + list(log_old_term_freqs.values()))
+            maxx = max(list(log_term_freqs.values())
+                       + list(log_old_term_freqs.values()))
+        print(minn)
+        print(maxx)
         colors = [ (z[word] - minn) / (maxx - minn)
                    for word in words[wordtype]
                    if remove_nones(kl_scores[wordtype][word]) != [] ]
 
         ax.set_axis_bgcolor('0.25')
         ax.scatter(kl_means[wordtype], kl_stddevs[wordtype], s=1,
-                   color=cmap(colors))
+                   color=coolwarm(colors))
 
-        m = plt.cm.ScalarMappable(cmap=cmap)
-        m.set_array([0,1])
-        cbar = plt.colorbar(m, ticks=[0,1])
-        cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
-        if colored_by == 'tf':
-            cbar.set_label('Term frequency of {} words'.format(wordtype))
-        elif colored_by == 'ltf':
-            cbar.set_label('Log term frequency of {} words'.format(wordtype))
+    m = plt.cm.ScalarMappable(cmap=coolwarm)
+    m.set_array([0,1])
+    cbar = plt.colorbar(m, ticks=[0,1])
+    cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
+    if colored_by == 'tf':
+        cbar.set_label('Term frequency of {} words'.format(wordtype))
+    elif colored_by == 'ltf':
+        cbar.set_label('Log term frequency of {} words'.format(wordtype))
 
     plt.xlabel('Mean KL score of a given word over time')
     plt.ylabel('Standard deviation of KL scores for a given word over time')
