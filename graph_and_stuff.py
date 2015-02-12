@@ -29,16 +29,23 @@ with open(old_words_filename) as fp:
     old_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
 
 # Unpack total word counts for each month.
-counts_filename = 'monthly_counts.csv'
-monthly_counts = dict()
+counts_filename = 'monthly_word_counts.csv'
+monthly_word_counts = dict()
 with open(counts_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     next(reader)
-    for row in csv.reader(fp, delimiter=','):
-        date = string_to_date(row[0])
-        count = int(row[1])
-        monthly_counts[date] = count
+    monthly_word_counts = { string_to_date(row[0]) : int(row[1])
+                            for row in reader }
     
+# Unpack vocabulary size for each month.
+counts_filename = 'monthly_vocab_size.csv'
+monthly_vocab_size = dict()
+with open(counts_filename) as fp:
+    reader = csv.reader(fp, delimiter=',')
+    next(reader)
+    monthly_vocab_size = { string_to_date(row[0]) : int(row[1])
+                           for row in reader }
+
 # Unpack the KL score data and compute means and stddevs for each word.
 kls_filename = '_word_symKL_scores.csv'
 wordtypes = ['old','new','stop']
@@ -63,7 +70,7 @@ for wordtype in wordtypes:
             word = tokens[0]
             scores = [ float(score) if score != '' else None
                        for score in tokens[1:] ]
-            relative_scores = [ score / monthly_counts[dates[i]]
+            relative_scores = [ score / monthly_word_counts[dates[i]]
                                 if score is not None else None
                                 for (i, score) in enumerate(scores) ]
             kl_scores[wordtype][word] = scores
@@ -124,6 +131,8 @@ plt.ylabel('Number of new words')
 plt.tight_layout()
 plt.savefig('plots/new_words_per_date.png', dpi=150)
 plt.close()
+
+
 
 # For both old and new words, plot three histograms:
 # - one of all KL scores for all words,
@@ -306,8 +315,6 @@ for colored_by in colored_bys:
                        + list(log_old_term_freqs.values()))
             maxx = max(list(log_term_freqs.values())
                        + list(log_old_term_freqs.values()))
-        print(minn)
-        print(maxx)
         colors = [ (z[word] - minn) / (maxx - minn)
                    for word in words[wordtype]
                    if remove_nones(kl_scores[wordtype][word]) != [] ]
@@ -315,6 +322,7 @@ for colored_by in colored_bys:
         ax.set_axis_bgcolor('0.25')
         ax.scatter(kl_means[wordtype], kl_stddevs[wordtype], s=1,
                    color=coolwarm(colors))
+                   #marker='+' if wordtype=='old' else 'x')
 
     m = plt.cm.ScalarMappable(cmap=coolwarm)
     m.set_array([0,1])
@@ -488,40 +496,50 @@ for kls in [kl_scores, relative_kl_scores]:
         if line == 'Old words':
             color = 'b'
             width = 2
-            style = '-'
         if line == 'Stopwords':
             color = 'g'
             width = 2
-            style = '-'
         elif line == 'New words':
             color = 'r'
             width = 2
-            style = '-'
         elif line == 'Left mode of new words':
             color = 'c'
             width = 2
-            style = '-'
         elif line == 'Right mode of new words':
             color = 'purple'
             width = 2
-            style = '-'
     
         ax.errorbar(yrs, remove_nones(means[line]),
                     yerr=[remove_nones(lower_errs[line]),
                           remove_nones(upper_errs[line])],
-                    linewidth=width, color=color, linestyle=style,
+                    linewidth=width, color=color,
                     label=line, alpha=0.7)#, capsize=9
     
+    # Plot vocabulary size using right y-axis. 
+    ax2 = ax.twinx()
+    pairs = sorted(list(monthly_vocab_size.items()))
+    xs = [ date[0]+(date[1]-1)/12 for (date,size) in pairs ]
+    ys = [ size for (date,size) in pairs ]
+    ax2.plot(xs, ys, linewidth=1, color='purple', alpha=0.7,
+             label='Vocabulary size')
+    ax2.set_ylabel('Vocabulary size', color='purple')
+    for tick in ax2.get_yticklabels():
+        tick.set_color('purple')
+
     plt.xlabel('Time')
     
     if kls == kl_scores:
         rel = ''
-        plt.legend(loc='lower right', prop={'size':8})
-        plt.ylabel('Symmetric KL divergence')
+        loc = 'lower right'
+        ax.set_ylabel('Symmetric KL divergence')
     elif kls == relative_kl_scores:
         rel = '_rel'
-        plt.legend(loc='upper right', prop={'size':8})
-        plt.ylabel("Symmetric KL divergence divided by that date's total word count")
+        loc = 'upper right'
+        ax.set_ylabel("Symmetric KL divergence divided by that date's total word count")
+
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1+h2, l1+l2, loc=loc, prop={'size':8})
 
     ax.set_xlim([1969, 2000])
     plt.tight_layout()

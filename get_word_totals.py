@@ -2,7 +2,8 @@ import os
 
 directory = 'monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
-output_filename = 'monthly_counts.csv'
+word_counts_filename = 'monthly_word_counts.csv'
+vocab_size_filename = 'monthly_vocab_size.csv'
 
 # Converts '2007-7.txt' to the tuple (2007,7).
 def filename_to_date(filename):
@@ -17,17 +18,21 @@ def preprocess(text):
         text = text.replace(p,' {} '.format(p))
     return text
  
-monthly_counts = []
+monthly_word_counts = []
+monthly_vocab_size = []
 for filename in filenames:
     date = filename_to_date(filename)
     with open(directory+filename) as fp:
-        count = len(preprocess(fp.read()).split())
-        monthly_counts.append([date, count])
+        words = preprocess(fp.read()).split()
+        monthly_word_counts.append([date, len(words)])
+        monthly_vocab_size.append([date, len(set(words))])
     print(date)
 
-monthly_counts.sort()
-
-with open(output_filename, 'w') as fp:
-    fp.write('date,num words\n')
-    for (date, count) in monthly_counts:
-        fp.write('{}-{},{}\n'.format(date[0], date[1], count))
+filenames = (word_counts_filename, vocab_size_filename)
+lists = (monthly_word_counts, monthly_vocab_size)
+for i in range(len(filenames)):
+    lists[i].sort()
+    with open(filenames[i], 'w') as fp:
+        fp.write('date,num words\n')
+        for (date, count) in lists[i]:
+            fp.write('{}-{},{}\n'.format(date[0], date[1], count))
