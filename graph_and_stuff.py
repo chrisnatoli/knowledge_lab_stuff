@@ -2,6 +2,8 @@ import csv
 import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
+import statsmodels.api as sm
+import scipy.stats
 
 
 
@@ -443,11 +445,15 @@ for kls in [kl_scores, relative_kl_scores]:
         upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
         return (lower_err, upper_err)
     
+    lines = ['Old words','Stopwords','New words']
+             #'Left mode of new words','Right mode of new words']
+
     means = dict()
     lower_errs = dict()
     upper_errs = dict()
-    lines = ['Old words','Stopwords','New words']
-             #'Left mode of new words','Right mode of new words']
+    slopes = dict()
+    stderrs = dict()
+
     for line in lines:
         # Compute the means and error bars for each line.
         means[line] = []
@@ -491,7 +497,7 @@ for kls in [kl_scores, relative_kl_scores]:
         
         # Match the time axis to the number of datapoints.
         # I.e., if a datapoint isn't available, skip that year.
-        yrs = [ yr for yr in years if means[line][years.index(yr)] is not None ]
+        t = [ yr for yr in years if means[line][years.index(yr)] is not None ]
     
         if line == 'Old words':
             color = 'b'
@@ -509,11 +515,40 @@ for kls in [kl_scores, relative_kl_scores]:
             color = 'purple'
             width = 2
     
-        ax.errorbar(yrs, remove_nones(means[line]),
+        y = remove_nones(means[line])
+        ax.errorbar(t, y,
                     yerr=[remove_nones(lower_errs[line]),
                           remove_nones(upper_errs[line])],
                     linewidth=width, color=color,
                     label=line, alpha=0.7)#, capsize=9
+
+        # Also fit an OLS line to the data in [1976, 2000):
+        for (i,yr) in enumerate(t):
+            if yr < 1976 or yr >= 2000:
+                t.remove(yr)
+                y.remove(y[i])
+        t = sm.add_constant(t)
+        model = sm.OLS(y, t)
+        results = model.fit()
+        (beta0, beta1) = results.params
+        (std_err0, std_err1) = results.bse
+        slopes[line] = beta1
+        stderrs[line] = std_err1
+
+    # Test if the slopes are the same, pairwise.
+    if kls == kl_scores:
+        print('Using plain KL scores')
+    elif kls == relative_kl_scores:
+        print('\nUsing relative KL scores (i.e., divided by corpus size)')
+    for (i, line_i) in enumerate(lines):
+        for (j, line_j) in [ (j,l) for (j,l) in enumerate(lines) if j>i ]:
+            diff = abs(slopes[line_i] - slopes[line_j])
+            stderr = np.sqrt(stderrs[line_i]**2 + stderrs[line_j]**2)
+            test_statistic = diff / stderr
+            df = (2000 - 1976)*2 - 4
+            p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
+            print('Under H_0: slope for {} = slope for {}, p-value = {}'
+                  .format(line_i, line_j, p))
     
     # Plot vocabulary size using right y-axis. 
     ax2 = ax.twinx()
