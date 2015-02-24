@@ -21,14 +21,21 @@ new_words_filename = 'new_words.csv'
 with open(new_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     new_words_header = next(reader)
-    new_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+    new_words_table = sorted([ row for row in reader ])
 
 # Unpack the table of old words.
 old_words_filename = 'old_words.csv'
 with open(old_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     old_words_header = next(reader)
-    old_words_table = sorted([ row for row in csv.reader(fp, delimiter=',') ])
+    old_words_table = sorted([ row for row in reader ])
+
+# Unpack the table of stopwords.
+stopwords_filename = 'stopwords.csv'
+with open(stopwords_filename) as fp:
+    reader = csv.reader(fp, delimiter=',')
+    stopwords_header = next(reader)
+    stopwords_table = sorted([ row for row in reader ])
 
 # Unpack total word counts for each month.
 counts_filename = 'monthly_word_counts.csv'
@@ -100,7 +107,6 @@ for wordtype in wordtypes:
                     new_words_left_mode.append(word)
                 else:
                     new_words_right_mode.append(word)
-
 
 
 
@@ -283,40 +289,58 @@ for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
 
 
 # Make two more scatterplots:
-# -- plot mean vs std of both new and old words colored by term frequency,
-#    with the same colormap,
+# -- plot mean vs std of new, old words, and stopwords colored by
+#    term frequency, with the same colormap,
 # -- do the same for log term frequency.
-summer = plt.cm.summer
-
 old_term_freqs = { row[old_words_header.index('word')]
-                   : float(row[old_words_header.index('term frequency') ])
+                   : float(row[old_words_header.index('term frequency')])
                    for row in old_words_table }
 
 log_old_term_freqs = { word : np.log(tf) for (word, tf)
                        in old_term_freqs.items() }
 
+stopword_freqs = dict()
+for row in stopwords_table:
+    word = row[stopwords_header.index('word')]
+    freq = float(row[stopwords_header.index('term frequency')])
+    if freq != 0: # If frequency is 0 then log freq = -inf, so drop those. 
+        stopword_freqs[word] = freq
+
+log_stopword_freqs = { word : np.log(tf) for (word, tf)
+                       in stopword_freqs.items() }
+
 colored_bys = ['tf', 'ltf']
 for colored_by in colored_bys:
     fig, ax = plt.subplots()
-    for wordtype in ['old','new']:
+    for wordtype in ['old', 'new', 'stop']:
         if colored_by == 'tf' and wordtype == 'new':
             z = term_freqs
         elif colored_by == 'ltf' and wordtype == 'new':
             z = log_term_freqs
-        if colored_by == 'tf' and wordtype == 'old':
+        elif colored_by == 'tf' and wordtype == 'old':
             z = old_term_freqs
         elif colored_by == 'ltf' and wordtype == 'old':
             z = log_old_term_freqs
+        elif colored_by == 'tf' and wordtype == 'stop':
+            z = stopword_freqs
+        elif colored_by == 'ltf' and wordtype == 'stop':
+            z = log_stopword_freqs
         
         # Normalize the color values so that they're in [0,1].
         if colored_by == 'tf':
-            minn = min(list(term_freqs.values()) + list(old_term_freqs.values()))
-            maxx = max(list(term_freqs.values()) + list(old_term_freqs.values()))
+            minn = min(list(term_freqs.values())
+                       + list(old_term_freqs.values())
+                       + list(stopword_freqs.values()))
+            maxx = max(list(term_freqs.values())
+                       + list(old_term_freqs.values())
+                       + list(stopword_freqs.values()))
         elif colored_by == 'ltf':
             minn = min(list(log_term_freqs.values())
-                       + list(log_old_term_freqs.values()))
+                       + list(log_old_term_freqs.values())
+                       + list(log_stopword_freqs.values()))
             maxx = max(list(log_term_freqs.values())
-                       + list(log_old_term_freqs.values()))
+                       + list(log_old_term_freqs.values())
+                       + list(log_stopword_freqs.values()))
         colors = [ (z[word] - minn) / (maxx - minn)
                    for word in words[wordtype]
                    if remove_nones(kl_scores[wordtype][word]) != [] ]
@@ -331,9 +355,9 @@ for colored_by in colored_bys:
     cbar = plt.colorbar(m, ticks=[0,1])
     cbar.set_ticklabels(['{0:.2f}'.format(minn), '{0:.2f}'.format(maxx)])
     if colored_by == 'tf':
-        cbar.set_label('Term frequency of {} words'.format(wordtype))
+        cbar.set_label('Term frequency'.format(wordtype))
     elif colored_by == 'ltf':
-        cbar.set_label('Log term frequency of {} words'.format(wordtype))
+        cbar.set_label('Log term frequency'.format(wordtype))
 
     plt.xlabel('Mean KL score of a given word over time')
     plt.ylabel('Standard deviation of KL scores for a given word over time')
@@ -522,33 +546,33 @@ for kls in [kl_scores, relative_kl_scores]:
                     linewidth=width, color=color,
                     label=line, alpha=0.7)#, capsize=9
 
-        # Also fit an OLS line to the data in [1976, 2000):
-        for (i,yr) in enumerate(t):
-            if yr < 1976 or yr >= 2000:
-                t.remove(yr)
-                y.remove(y[i])
-        t = sm.add_constant(t)
-        model = sm.OLS(y, t)
-        results = model.fit()
-        (beta0, beta1) = results.params
-        (std_err0, std_err1) = results.bse
-        slopes[line] = beta1
-        stderrs[line] = std_err1
+    #    # Also fit an OLS line to the data in [1976, 2000):
+    #    for (i,yr) in enumerate(t):
+    #        if yr < 1976 or yr >= 2000:
+    #            t.remove(yr)
+    #            y.remove(y[i])
+    #    t = sm.add_constant(t)
+    #    model = sm.OLS(y, t)
+    #    results = model.fit()
+    #    (beta0, beta1) = results.params
+    #    (std_err0, std_err1) = results.bse
+    #    slopes[line] = beta1
+    #    stderrs[line] = std_err1
 
-    # Test if the slopes are the same, pairwise.
-    if kls == kl_scores:
-        print('Using plain KL scores')
-    elif kls == relative_kl_scores:
-        print('\nUsing relative KL scores (i.e., divided by corpus size)')
-    for (i, line_i) in enumerate(lines):
-        for (j, line_j) in [ (j,l) for (j,l) in enumerate(lines) if j>i ]:
-            diff = abs(slopes[line_i] - slopes[line_j])
-            stderr = np.sqrt(stderrs[line_i]**2 + stderrs[line_j]**2)
-            test_statistic = diff / stderr
-            df = (2000 - 1976)*2 - 4
-            p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
-            print('Under H_0: slope for {} = slope for {}, p-value = {}'
-                  .format(line_i, line_j, p))
+    ## Test if the slopes are the same, pairwise.
+    #if kls == kl_scores:
+    #    print('Using plain KL scores')
+    #elif kls == relative_kl_scores:
+    #    print('\nUsing relative KL scores (i.e., divided by corpus size)')
+    #for (i, line_i) in enumerate(lines):
+    #    for (j, line_j) in [ (j,l) for (j,l) in enumerate(lines) if j>i ]:
+    #        diff = abs(slopes[line_i] - slopes[line_j])
+    #        stderr = np.sqrt(stderrs[line_i]**2 + stderrs[line_j]**2)
+    #        test_statistic = diff / stderr
+    #        df = (2000 - 1976)*2 - 4
+    #        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
+    #        print('Under H_0: slope for {} = slope for {}, p-value = {}'
+    #              .format(line_i, line_j, p))
     
     # Plot vocabulary size using right y-axis. 
     ax2 = ax.twinx()
@@ -634,11 +658,67 @@ plt.close()
 
 
 
-###############################
-# And then do some other stuff:
+# Use WLS to test if the slopes of the lines for old words, new words,
+# and stopwords is the same. Only check dates in [1976,2000).
+# I use WLS because the OLS residuals spread out in a cone shape.
+slopes = dict()
+stderrs = dict()
+num_points = dict()
+for wordtype in wordtypes:
+    # Compute weights for WLS.
+    weights_dict = dict()
+    for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
+        var = np.var(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
+                                    for word in words[wordtype] ]))
+        weights_dict[d] = 1/var
 
-# The distribution of all KL scores for old words has a strange left hump.
-# dump all these words into a file to examine them qualitatively.
+    # Collect the datapoints from this wordtype.
+    scores = []
+    times = []
+    weights = []
+    for word in words[wordtype]:
+        for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
+            score = kl_scores[wordtype][word][dates.index(d)]
+            if score is not None:
+                scores.append(score)
+                times.append(d[0] + (d[1]-1)/12)
+                weights.append(weights_dict[d])
+                
+    # Fit an WLS model with intercept. Record slope and stderr.
+    t = sm.add_constant(times)
+    model = sm.WLS(scores, t, weights=weights)
+    results = model.fit()
+    (beta0, beta1) = results.params
+    (std_err0, std_err1) = results.bse
+    slopes[wordtype] = beta1
+    stderrs[wordtype] = std_err1
+    num_points[wordtype] = len(scores)
+    print('{} words:\nslope = {}\nstderr = {}\n'
+          .format(wordtype, beta1, std_err1))
+
+    plt.scatter(times, list(results.resid), s=1)
+    plt.savefig('plots/resid_{}_wls.png'.format(wordtype))
+    plt.close()
+
+# Use a simple t-test to test if the slopes are the same.
+for (i, wordtype_i) in enumerate(wordtypes):
+    for (j, wordtype_j) in [ (j,t) for (j,t) in enumerate(wordtypes) if j>i ]:
+        diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
+        stderr = np.sqrt(stderrs[wordtype_i]**2 + stderrs[wordtype_j]**2)
+        test_statistic = diff / stderr
+        df = num_points[wordtype_i] + num_points[wordtype_i] - 4
+        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
+        print('Under H_0: slope for {} words = slope for {} words, p-value = {}'
+              .format(wordtype_i, wordtype_j, p))
+
+
+
+
+################################
+## And then do some other stuff:
+#
+## The distribution of all KL scores for old words has a strange left hump.
+## dump all these words into a file to examine them qualitatively.
 #left_hump = dict()
 #for (word,scores) in kl_scores['old'].items():
 #    for score in remove_nones(scores):
