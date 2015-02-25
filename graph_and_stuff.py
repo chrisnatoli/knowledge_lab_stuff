@@ -546,34 +546,6 @@ for kls in [kl_scores, relative_kl_scores]:
                     linewidth=width, color=color,
                     label=line, alpha=0.7)#, capsize=9
 
-    #    # Also fit an OLS line to the data in [1976, 2000):
-    #    for (i,yr) in enumerate(t):
-    #        if yr < 1976 or yr >= 2000:
-    #            t.remove(yr)
-    #            y.remove(y[i])
-    #    t = sm.add_constant(t)
-    #    model = sm.OLS(y, t)
-    #    results = model.fit()
-    #    (beta0, beta1) = results.params
-    #    (std_err0, std_err1) = results.bse
-    #    slopes[line] = beta1
-    #    stderrs[line] = std_err1
-
-    ## Test if the slopes are the same, pairwise.
-    #if kls == kl_scores:
-    #    print('Using plain KL scores')
-    #elif kls == relative_kl_scores:
-    #    print('\nUsing relative KL scores (i.e., divided by corpus size)')
-    #for (i, line_i) in enumerate(lines):
-    #    for (j, line_j) in [ (j,l) for (j,l) in enumerate(lines) if j>i ]:
-    #        diff = abs(slopes[line_i] - slopes[line_j])
-    #        stderr = np.sqrt(stderrs[line_i]**2 + stderrs[line_j]**2)
-    #        test_statistic = diff / stderr
-    #        df = (2000 - 1976)*2 - 4
-    #        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
-    #        print('Under H_0: slope for {} = slope for {}, p-value = {}'
-    #              .format(line_i, line_j, p))
-    
     # Plot vocabulary size using right y-axis. 
     ax2 = ax.twinx()
     pairs = sorted(list(monthly_vocab_size.items()))
@@ -658,38 +630,37 @@ plt.close()
 
 
 
-# Use WLS to test if the slopes of the lines for old words, new words,
+# Use OLS to test if the slopes of the lines for old words, new words,
 # and stopwords is the same. Only check dates in [1976,2000).
-# I use WLS because the OLS residuals spread out in a cone shape.
 slopes = dict()
 stderrs = dict()
 num_points = dict()
 for wordtype in wordtypes:
-    # Compute weights for WLS.
-    weights_dict = dict()
-    for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
-        var = np.var(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
-                                    for word in words[wordtype] ]))
-        weights_dict[d] = 1/var
+    ## Compute weights for WLS.
+    #weights_dict = dict()
+    #for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
+    #    var = np.var(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
+    #                                for word in words[wordtype] ]))
+    #    weights_dict[d] = 1/var
 
     # Collect the datapoints from this wordtype.
     scores = []
     times = []
-    weights = []
+    #weights = []
     for word in words[wordtype]:
         for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
             score = kl_scores[wordtype][word][dates.index(d)]
             if score is not None:
                 scores.append(score)
                 times.append(d[0] + (d[1]-1)/12)
-                weights.append(weights_dict[d])
+                #weights.append(weights_dict[d])
                 
-    # Fit an WLS model with intercept. Record slope and stderr.
+    # Fit an OLS model with intercept. Record slope and stderr.
     t = sm.add_constant(times)
-    model = sm.WLS(scores, t, weights=weights)
+    model = sm.OLS(scores, t)#, weights=weights)
     results = model.fit()
     (beta0, beta1) = results.params
-    (std_err0, std_err1) = results.bse
+    (std_err0, std_err1) = results.HC0_se # Use Huber-White, heteroskedastic
     slopes[wordtype] = beta1
     stderrs[wordtype] = std_err1
     num_points[wordtype] = len(scores)
@@ -697,7 +668,11 @@ for wordtype in wordtypes:
           .format(wordtype, beta1, std_err1))
 
     plt.scatter(times, list(results.resid), s=1)
-    plt.savefig('plots/resid_{}_wls.png'.format(wordtype))
+    plt.savefig('plots/resid_{}_ols.png'.format(wordtype))
+    plt.close()
+
+    sm.qqplot(results.resid, line='s')
+    plt.savefig('plots/resid_qq.png')
     plt.close()
 
 # Use a simple t-test to test if the slopes are the same.
