@@ -60,7 +60,6 @@ kls_filename = '_word_symKL_scores.csv'
 wordtypes = ['old','new','stop']
 words = dict()
 kl_scores = dict()
-relative_kl_scores = dict() # Relative to the size of that date's document.
 flat_kl_scores = dict()
 kl_means = dict()
 kl_stddevs = dict()
@@ -69,7 +68,6 @@ new_words_right_mode = []
 for wordtype in wordtypes:
     # Load the data into a dictionary from words to lists of scores.
     kl_scores[wordtype] = dict()
-    relative_kl_scores[wordtype] = dict()
     words[wordtype] = []
     with open(wordtype + kls_filename) as fp:
         dates = [ string_to_date(s) for s in
@@ -79,11 +77,7 @@ for wordtype in wordtypes:
             word = tokens[0]
             scores = [ float(score) if score != '' else None
                        for score in tokens[1:] ]
-            relative_scores = [ score / monthly_word_counts[dates[i]]
-                                if score is not None else None
-                                for (i, score) in enumerate(scores) ]
             kl_scores[wordtype][word] = scores
-            relative_kl_scores[wordtype][word] = relative_scores
             words[wordtype].append(word)
     
     # Generate lists of KL scores, ignoring empty datapoints and
@@ -429,161 +423,177 @@ for num_years in [5,8]:
 
 
 
-# Time series plot of KL scores for batches of old and new words.
-# Make one set of plots for KL scores and another set of plots where KL
-# score of each date is divided by the size of that date's document.
-years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
+# Use OLS to test if the slopes of the lines for old words, new words,
+# and stopwords is the same. Only check dates in [1976,2000).
+slopes = dict()
+stderrs = dict()
+intercepts = dict()
+num_points = dict()
+for wordtype in wordtypes:
+    # Collect the datapoints from this wordtype.
+    scores = []
+    times = []
+    for word in words[wordtype]:
+        for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
+            score = kl_scores[wordtype][word][dates.index(d)]
+            if score is not None:
+                scores.append(score)
+                times.append(d[0] + (d[1]-1)/12)
+                
+    # Fit an OLS model with intercept. Record slope and stderr.
+    t = sm.add_constant(times)
+    model = sm.OLS(scores, t)
+    results = model.fit()
+    resids = results.resid
+    (beta0, beta1) = results.params
+    (std_err0, std_err1) = results.HC0_se # Use Huber-White, heteroskedastic
+    intercepts[wordtype] = beta0
+    slopes[wordtype] = beta1
+    stderrs[wordtype] = std_err1
+    num_points[wordtype] = len(scores)
+    print('{} words:\nslope = {}\nstderr = {}\n'
+          .format(wordtype, beta1, std_err1))
 
-for kls in [kl_scores, relative_kl_scores]:
-    fig, ax = plt.subplots()
-
-    # For every date whose month is, e.g., January, plot a line for each word
-    # in the batch of words whose first appearance is that date.
-    for m in range(1,13): # Actually, just do this for every month.
-        for date in [ d for d in dates if d < (2000,1) and d[1] == m ]:
-            batch = [ word for word in words['new']
-                      if first_appearances[word] == date ]
-            for word in batch:
-                scores = []
-                ds = []
-                for d in [ d for d in dates if d >= date ]:
-                    score = kls['new'][word][dates.index(d)]
-                    if score is not None:
-                        scores.append(score)
-                        ds.append(d[0] + (d[1]-1)/12)
-                if scores != []:
-                    ax.plot(ds, scores, color='k', alpha=0.005)
-            
-    # Now plot the mean KL scores for five big batches of words:
-    # -- all old words,
-    # -- all stopwords,
-    # -- all new words,
-    # -- the left mode of new words,
-    # -- the right mode of new words.
-    # Also plot error bars for the means, acquired via bootstrapping.
-    def error_bars(xs, alpha):
-        num_samples = 300
-        means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
-                         for i in range(num_samples) ])
-        lower_err = np.mean(xs) - means[int(alpha/2 * num_samples)]
-        upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
-        return (lower_err, upper_err)
-    
-    lines = ['Old words','Stopwords','New words']
-             #'Left mode of new words','Right mode of new words']
-
-    means = dict()
-    lower_errs = dict()
-    upper_errs = dict()
-    slopes = dict()
-    stderrs = dict()
-
-    for line in lines:
-        # Compute the means and error bars for each line.
-        means[line] = []
-        lower_errs[line] = []
-        upper_errs[line] = []
-        for year in years:
-            # Rather than plot one point for each month, plot one point for each year.
-            # collapsing across the twelve months.
-            scores = []
-            for d in [ d for d in dates if d[0] == year ]:
-                if line == 'Old words':
-                    scores.extend(remove_nones([ kls['old'][word][dates.index(d)]
-                                                 for word in words['old'] ]))
-                if line == 'Stopwords':
-                    scores.extend(remove_nones([ kls['stop'][word][dates.index(d)]
-                                                 for word in words['stop'] ]))
-                if line == 'New words':
-                    new_words_this_month = [ word for word in words['new']
-                                             if first_appearances[word] == d ]
-                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
-                                                 for word in new_words_this_month ]))
-                if line == 'Left mode of new words':
-                    left_words_this_month = [ word for word in new_words_left_mode
-                                              if first_appearances[word] == d ]
-                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
-                                                 for word in left_words_this_month ]))
-                if line == 'Right mode of new words':
-                    right_words_this_month = [ word for word in new_words_right_mode
-                                               if first_appearances[word] == d ]
-                    scores.extend(remove_nones([ kls['new'][word][dates.index(d)]
-                                                 for word in right_words_this_month ]))
-            if scores == []:
-                means[line].append(None)
-                lower_errs[line].append(None)
-                upper_errs[line].append(None)
-            else:
-                means[line].append(np.mean(scores))
-                errs = error_bars(scores, 0.01)
-                lower_errs[line].append(errs[0])
-                upper_errs[line].append(errs[1])
-        
-        # Match the time axis to the number of datapoints.
-        # I.e., if a datapoint isn't available, skip that year.
-        t = [ yr for yr in years if means[line][years.index(yr)] is not None ]
-    
-        if line == 'Old words':
-            color = 'b'
-            width = 2
-        if line == 'Stopwords':
-            color = 'g'
-            width = 2
-        elif line == 'New words':
-            color = 'r'
-            width = 2
-        elif line == 'Left mode of new words':
-            color = 'c'
-            width = 2
-        elif line == 'Right mode of new words':
-            color = 'purple'
-            width = 2
-    
-        y = remove_nones(means[line])
-        ax.errorbar(t, y,
-                    yerr=[remove_nones(lower_errs[line]),
-                          remove_nones(upper_errs[line])],
-                    linewidth=width, color=color,
-                    label=line, alpha=0.7)#, capsize=9
-
-    # Plot vocabulary size using right y-axis. 
-    ax2 = ax.twinx()
-    pairs = sorted(list(monthly_vocab_size.items()))
-    xs = [ date[0]+(date[1]-1)/12 for (date,size) in pairs ]
-    ys = [ size for (date,size) in pairs ]
-    ax2.plot(xs, ys, linewidth=1, color='purple', alpha=0.7,
-             label='Vocabulary size')
-    ax2.set_ylabel('Vocabulary size', color='purple')
-    for tick in ax2.get_yticklabels():
-        tick.set_color('purple')
-
-    plt.xlabel('Time')
-    
-    if kls == kl_scores:
-        rel = ''
-        loc = 'lower right'
-        ax.set_ylabel('Symmetric KL divergence')
-    elif kls == relative_kl_scores:
-        rel = '_rel'
-        loc = 'upper right'
-        ax.set_ylabel("Symmetric KL divergence divided by that date's total word count")
-
-    h1, l1 = ax.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax.legend(h1+h2, l1+l2, loc=loc, prop={'size':8})
-
-    ax.set_xlim([1969, 2000])
-    plt.tight_layout()
-    plt.savefig('plots/time_series{}.png'.format(rel), dpi=200)
-    
-    ax.set_xlim([1976, 2000])
-    if kls == kl_scores:
-        ax.set_ylim([1.2, 2.3])
-    elif kls == relative_kl_scores:
-        ax.set_ylim([0, 0.000005])
-    plt.savefig('plots/time_series{}_zoom.png'.format(rel), dpi=200)
+    plt.scatter(times, list(resids), s=1)
+    plt.savefig('plots/resid_{}_ols.png'.format(wordtype))
     plt.close()
 
+    sm.qqplot(resids, line='s')
+    plt.savefig('plots/resid_qq.png')
+    plt.close()
+
+    (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
+    normal_curve = plt.normpdf(bins, np.mean(resids), np.std(resids))
+    plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
+    plt.savefig('plots/resid_hist.png')
+    plt.close()
+
+# Use a simple t-test to test if the slopes are the same.
+for (i, wordtype_i) in enumerate(wordtypes):
+    for (j, wordtype_j) in [ (j,t) for (j,t) in enumerate(wordtypes) if j>i ]:
+        diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
+        stderr = np.sqrt(stderrs[wordtype_i]**2 + stderrs[wordtype_j]**2)
+        test_statistic = diff / stderr
+        df = num_points[wordtype_i] + num_points[wordtype_i] - 4
+        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
+        print('Under H_0: slope for {} words = slope for {} words, p-value = {}'
+              .format(wordtype_i, wordtype_j, p))
+
+
+
+
+
+# Time series plot of KL scores:
+fig, ax = plt.subplots()
+        
+# Plot the mean KL scores for three big batches of words
+# (where the mean is averaging across words within the batch
+# and across a single year):
+# -- all old words,
+# -- all stopwords,
+# -- all new words.
+# Also plot error bars for the means, acquired via bootstrapping.
+
+def error_bars(xs, alpha):
+    num_samples = 300
+    means = sorted([ np.mean(np.random.choice(xs, size=len(xs), replace=True))
+                     for i in range(num_samples) ])
+    lower_err = np.mean(xs) - means[int(alpha/2 * num_samples)]
+    upper_err = means[int((1-alpha/2) * num_samples)] - np.mean(xs)
+    return (lower_err, upper_err)
+
+years = sorted(list(set([ d[0] for d in dates if d[0] < 2000 ])))
+
+kl_means_over_words = dict() # Unlike kl_means above, these avg across words.
+lower_errs = dict()
+upper_errs = dict()
+
+for wordtype in wordtypes:
+    # Compute the means and error bars for each wordtype.
+    kl_means_over_words[wordtype] = []
+    lower_errs[wordtype] = []
+    upper_errs[wordtype] = []
+    t = []
+    for year in years:
+        # Rather than plot one point for each month, plot one point for each year.
+        # collapsing across the twelve months.
+        scores = []
+        for d in [ d for d in dates if d[0] == year ]:
+            if wordtype == 'old' or wordtype == 'stop':
+                scores.extend(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
+                                             for word in words[wordtype] ]))
+            elif wordtype == 'new':
+                new_words_this_month = [ word for word in words['new']
+                                         if first_appearances[word] == d ]
+                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
+                                             for word in new_words_this_month ]))
+
+        if scores == []:
+            kl_means_over_words[wordtype].append(None)
+            lower_errs[wordtype].append(None)
+            upper_errs[wordtype].append(None)
+        else:
+            kl_means_over_words[wordtype].append(np.mean(scores))
+            errs = error_bars(scores, 0.01)
+            lower_errs[wordtype].append(errs[0])
+            upper_errs[wordtype].append(errs[1])
+            t.append(year)
+
+    # Then plot this batch of words.
+    if wordtype == 'old':
+        color = 'b'
+        label = 'Old words'
+    elif wordtype == 'stop':
+        color = 'g'
+        label = 'Stopwords'
+    elif wordtype == 'new':
+        color = 'r'
+        label = 'New words'
+
+    ax.errorbar(t, remove_nones(kl_means_over_words[wordtype]),
+                yerr=[remove_nones(lower_errs[wordtype]),
+                      remove_nones(upper_errs[wordtype])],
+                linewidth=2, color=color,
+                label=label, alpha=0.7)
+
+# Also plot a semitransparent black line for each new word.
+for word in words['new']:
+    xs = []
+    ys = []
+    for date in [ d for d in dates if first_appearances[word] <= d < (2000,1) ]:
+        score = kl_scores['new'][word][dates.index(date)]
+        if score is not None:
+            ys.append(score)
+            xs.append(date[0] + (date[1]-1)/12)
+    if ys != []:
+        ax.plot(xs, ys, color='k', alpha=0.005)
+
+# Plot vocabulary size using right y-axis. 
+ax2 = ax.twinx()
+pairs = sorted(list(monthly_vocab_size.items()))
+xs = [ date[0]+(date[1]-1)/12 for (date,size) in pairs ]
+ys = [ size for (date,size) in pairs ]
+ax2.plot(xs, ys, linewidth=1, color='purple', alpha=0.7,
+         label='Vocabulary size')
+ax2.set_ylabel('Vocabulary size', color='purple')
+for tick in ax2.get_yticklabels():
+    tick.set_color('purple')
+
+ax.set_xlabel('Time')
+ax.set_ylabel('Symmetric KL divergence')
+
+h1, l1 = ax.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax.legend(h1+h2, l1+l2, loc='lower right', prop={'size':8})
+
+ax.set_xlim([1969, 2000])
+plt.tight_layout()
+plt.savefig('plots/time_series.png', dpi=200)
+
+ax.set_xlim([1976, 2000])
+ax.set_ylim([1.2, 2.3])
+plt.savefig('plots/time_series_zoom.png', dpi=200)
+plt.close()
 
 
 
@@ -630,69 +640,6 @@ plt.close()
 
 
 
-# Use OLS to test if the slopes of the lines for old words, new words,
-# and stopwords is the same. Only check dates in [1976,2000).
-slopes = dict()
-stderrs = dict()
-num_points = dict()
-for wordtype in wordtypes:
-    ## Compute weights for WLS.
-    #weights_dict = dict()
-    #for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
-    #    var = np.var(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
-    #                                for word in words[wordtype] ]))
-    #    weights_dict[d] = 1/var
-
-    # Collect the datapoints from this wordtype.
-    scores = []
-    times = []
-    #weights = []
-    for word in words[wordtype]:
-        for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
-            score = kl_scores[wordtype][word][dates.index(d)]
-            if score is not None:
-                scores.append(score)
-                times.append(d[0] + (d[1]-1)/12)
-                #weights.append(weights_dict[d])
-                
-    # Fit an OLS model with intercept. Record slope and stderr.
-    t = sm.add_constant(times)
-    model = sm.OLS(scores, t)#, weights=weights)
-    results = model.fit()
-    resids = results.resid
-    (beta0, beta1) = results.params
-    (std_err0, std_err1) = results.HC0_se # Use Huber-White, heteroskedastic
-    slopes[wordtype] = beta1
-    stderrs[wordtype] = std_err1
-    num_points[wordtype] = len(scores)
-    print('{} words:\nslope = {}\nstderr = {}\n'
-          .format(wordtype, beta1, std_err1))
-
-    plt.scatter(times, list(resids), s=1)
-    plt.savefig('plots/resid_{}_ols.png'.format(wordtype))
-    plt.close()
-
-    sm.qqplot(resids, line='s')
-    plt.savefig('plots/resid_qq.png')
-    plt.close()
-
-    (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
-    normal_curve = plt.normpdf(bins, np.mean(resids), np.std(resids))
-    plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
-    plt.savefig('plots/resid_hist.png')
-    plt.close()
-
-
-# Use a simple t-test to test if the slopes are the same.
-for (i, wordtype_i) in enumerate(wordtypes):
-    for (j, wordtype_j) in [ (j,t) for (j,t) in enumerate(wordtypes) if j>i ]:
-        diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
-        stderr = np.sqrt(stderrs[wordtype_i]**2 + stderrs[wordtype_j]**2)
-        test_statistic = diff / stderr
-        df = num_points[wordtype_i] + num_points[wordtype_i] - 4
-        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
-        print('Under H_0: slope for {} words = slope for {} words, p-value = {}'
-              .format(wordtype_i, wordtype_j, p))
 
 
 
