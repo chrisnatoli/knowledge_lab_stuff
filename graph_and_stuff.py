@@ -659,6 +659,7 @@ for wordtype in wordtypes:
     t = sm.add_constant(times)
     model = sm.OLS(scores, t)#, weights=weights)
     results = model.fit()
+    resids = results.resid
     (beta0, beta1) = results.params
     (std_err0, std_err1) = results.HC0_se # Use Huber-White, heteroskedastic
     slopes[wordtype] = beta1
@@ -667,13 +668,20 @@ for wordtype in wordtypes:
     print('{} words:\nslope = {}\nstderr = {}\n'
           .format(wordtype, beta1, std_err1))
 
-    plt.scatter(times, list(results.resid), s=1)
+    plt.scatter(times, list(resids), s=1)
     plt.savefig('plots/resid_{}_ols.png'.format(wordtype))
     plt.close()
 
-    sm.qqplot(results.resid, line='s')
+    sm.qqplot(resids, line='s')
     plt.savefig('plots/resid_qq.png')
     plt.close()
+
+    (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
+    normal_curve = plt.normpdf(bins, np.mean(resids), np.std(resids))
+    plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
+    plt.savefig('plots/resid_hist.png')
+    plt.close()
+
 
 # Use a simple t-test to test if the slopes are the same.
 for (i, wordtype_i) in enumerate(wordtypes):
