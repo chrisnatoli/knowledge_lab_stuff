@@ -361,6 +361,47 @@ for colored_by in colored_bys:
 
 
 
+# Make another scatterplot, but only of old words sampled from the 
+# histogram of new word log term frequencies. Color the points by log tf.
+xs = []
+ys = []
+zs = []
+sample_size = 4000 # Note that number of unique old words selected < 4000.
+new_word_logtfs = sorted(list(log_term_freqs.values()))
+old_word_pairs = sorted([ (v,k) for (k,v) in log_old_term_freqs.items() ])
+for new_logtf in np.random.choice(new_word_logtfs, size=sample_size):
+    for (old_logtf, old_word) in old_word_pairs:
+        if old_logtf > new_logtf:
+            scores = remove_nones(kl_scores['old'][old_word])
+            if scores != []:
+                xs.append(np.mean(scores))
+                ys.append(np.std(scores))
+                zs.append(old_logtf)
+                break
+            
+maxx = max(zs)
+minn = min(zs)
+colors = [ (z - minn) / (maxx - minn) for z in zs ]
+
+fig, ax = plt.subplots()
+ax.set_axis_bgcolor('0.25')
+ax.scatter(xs, ys, s=1, color=coolwarm(colors))
+
+m = plt.cm.ScalarMappable(cmap=coolwarm)
+m.set_array([0,1])
+cbar = plt.colorbar(m, ticks=[0,1])
+cbar.set_ticklabels(['{:.2f}'.format(minn), '{:.2f}'.format(maxx)])
+cbar.set_label('Log term frequency')
+        
+plt.xlabel('Mean KL score of a given word over time')
+plt.ylabel('Standard deviation of KL scores for a given word over time')
+
+plt.savefig('plots/scatter_symKL_mean_vs_std_old_sample_logtf.png')
+plt.close()
+
+
+
+
 
 # More scatterplots: mean vs date of first appearance and stddev vs date.
 firsts = [ first_appearances[word] for word in words['new']
