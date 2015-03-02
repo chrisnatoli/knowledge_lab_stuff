@@ -1,7 +1,7 @@
 import csv
 import numpy as np
-import matplotlib.pylab as plt
 import matplotlib
+import matplotlib.pylab as plt
 import statsmodels.api as sm
 import scipy.stats
 
@@ -595,6 +595,50 @@ ax.set_ylim([1.2, 2.3])
 plt.savefig('plots/time_series_zoom.png', dpi=200)
 plt.close()
 
+
+
+
+# Now plot similar graphs but rather than connect the dots between the means,
+# just plot the straight lines fitted by OLS.
+fig, ax = plt.subplots()
+
+for wordtype in wordtypes:
+    # First make a scatterplot with errorbars for each batch of words.
+    t = [ year for year in years
+          if kl_means_over_words[wordtype][years.index(year)] is not None]
+    if wordtype == 'old':
+        color = 'b'
+        label = r'Old words $\beta_1={:.4f}$'.format(slopes[wordtype])
+    elif wordtype == 'stop':
+        color = 'g'
+        label = r'Stopwords $\beta_1={:.4f}$'.format(slopes[wordtype])
+    elif wordtype == 'new':
+        color = 'r'
+        label = r'New words $\beta_1={:.4f}$'.format(slopes[wordtype])
+    ax.errorbar(t, remove_nones(kl_means_over_words[wordtype]),
+                yerr=[remove_nones(lower_errs[wordtype]),
+                      remove_nones(upper_errs[wordtype])],
+                color=color, fmt='', linestyle='None',
+                linewidth=2, alpha=0.7)
+
+    # Then add a straight line fitted by OLS.
+    xs = [1976, 1999]
+    ys = [ intercepts[wordtype] + slopes[wordtype] * x
+           for x in xs ]
+    ax.plot(xs, ys, color=color, linewidth=2, alpha=0.7, label=label)
+
+plt.legend(loc='lower right', prop={'size':9})
+
+ax.set_xlim([1976, 2000])
+ax.set_ylim([1.2, 3.8])
+
+ax.set_xlabel('Time')
+ax.set_ylabel('Symmetric KL divergence')
+
+plt.tight_layout()
+plt.savefig('plots/time_series_OLSfit.png', dpi=200)
+plt.close()
+    
 
 
 
