@@ -2,6 +2,7 @@ import csv
 import numpy as np
 import matplotlib
 import matplotlib.pylab as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
 import scipy.stats
 
@@ -424,17 +425,20 @@ plt.close()
 # Rather than look at mean and stddev of a word over the entire duration of the
 # word's time series, just look at the next n years. Check
 # out the colored scatterplot and the histograms of means and stddevs again.
+pdf = PdfPages('plots/scatter_symKL_partial_mean_vs_std_colored_by_yr.pdf')
 first_appearances = { row[new_words_header.index('word')]
                       : string_to_date(row[
                           new_words_header.index('first appearance')])
                       for row in new_words_table }
-for num_years in [5,8]:
+for num_years in range(2,40):
     partial_means = []
     partial_stddevs = []
     colors = []
     for word in words['new']:
         start = first_appearances[word]
         end = (start[0] + num_years, start[1])
+        if end > dates[-1]:
+            end = dates[-1]
         scores = remove_nones(kl_scores['new'][word][dates.index(start)
                                                      : dates.index(end)])
         if scores != []:
@@ -443,23 +447,26 @@ for num_years in [5,8]:
             colors.append(coolwarm((start[0]-1970)/(2000-1970)))
     
     fig, ax = plt.subplots()
+
     ax.set_axis_bgcolor('0.25')
     ax.scatter(partial_means, partial_stddevs, s=1, color=colors)
+    ax.set_xlim([0, 2.5])
+    ax.set_ylim([0, 0.5])
+
+    m = plt.cm.ScalarMappable(cmap=coolwarm)
+    m.set_array([0,1])
+    cbar = plt.colorbar(m, ticks=[0,1])
+    cbar.set_ticklabels(['1970','2000'])
+    cbar.set_label('First appearance')
+
     plt.xlabel('Mean KL score of a given word over {} years'.format(num_years))
     plt.ylabel('Standard deviation of KL scores of a given word over {} years'
                .format(num_years))
-    plt.savefig('plots/scatter_symKL_partial{}_mean_vs_std_with_yr.png'
-                .format(num_years))
+    plt.savefig(pdf, format='pdf')
     plt.close()
+
+pdf.close()
     
-    plt.hist(partial_means, bins=70)
-    plt.savefig('plots/hist_of_symKL_partial{}_means.png'.format(num_years))
-    plt.close()
-     
-    plt.hist(partial_stddevs, bins=70)
-    plt.savefig('plots/hist_of_symKL_partial{}_stddevs.png'.format(num_years))
-    plt.close()
- 
 
 
 
@@ -670,7 +677,7 @@ for wordtype in wordtypes:
 
 plt.legend(loc='lower right', prop={'size':9})
 
-ax.set_xlim([1976, 2000])
+ax.set_xlim([1975, 2000])
 ax.set_ylim([1.2, 3.8])
 
 ax.set_xlabel('Time')
