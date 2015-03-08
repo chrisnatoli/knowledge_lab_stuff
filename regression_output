@@ -1,0 +1,354 @@
+
+
+
+
+KL SCORES FOR NEW WORDS IS after_introduction
+
+
+
+THE FOLLOWING REGRESSION IS with_vocab
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.572
+Model:                            OLS   Adj. R-squared:                  0.572
+Method:                 Least Squares   F-statistic:                 7.934e+05
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:40:56   Log-Likelihood:             6.2273e+05
+No. Observations:             1187734   AIC:                        -1.245e+06
+Df Residuals:                 1187731   BIC:                        -1.245e+06
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -39.7105      0.196   -202.622      0.000       -40.095   -39.326
+x1             0.0208   9.92e-05    209.309      0.000         0.021     0.021
+x2          1.473e-08   4.58e-10     32.185      0.000      1.38e-08  1.56e-08
+==============================================================================
+Omnibus:                   392357.212   Durbin-Watson:                   0.077
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1635366.791
+Skew:                          -1.594   Prob(JB):                         0.00
+Kurtosis:                       7.784   Cond. No.                     4.78e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 4.78e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.977
+Model:                            OLS   Adj. R-squared:                  0.977
+Method:                 Least Squares   F-statistic:                     6454.
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):          6.89e-248
+Time:                        14:42:04   Log-Likelihood:                 598.99
+No. Observations:                 304   AIC:                            -1192.
+Df Residuals:                     301   BIC:                            -1181.
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -44.4432      2.800    -15.872      0.000       -49.954   -38.933
+x1             0.0232      0.001     16.353      0.000         0.020     0.026
+x2           4.67e-08   6.66e-09      7.008      0.000      3.36e-08  5.98e-08
+==============================================================================
+Omnibus:                       13.528   Durbin-Watson:                   1.977
+Prob(Omnibus):                  0.001   Jarque-Bera (JB):               14.048
+Skew:                          -0.500   Prob(JB):                     0.000890
+Kurtosis:                       3.331   Cond. No.                     4.66e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 4.66e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.214
+Model:                            OLS   Adj. R-squared:                  0.214
+Method:                 Least Squares   F-statistic:                     7783.
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:42:06   Log-Likelihood:                -18998.
+No. Observations:               57165   AIC:                         3.800e+04
+Df Residuals:                   57162   BIC:                         3.803e+04
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -51.0506      2.117    -24.112      0.000       -55.200   -46.901
+x1             0.0274      0.001     25.530      0.000         0.025     0.029
+x2         -9.212e-09   4.92e-09     -1.870      0.061     -1.89e-08  4.41e-10
+==============================================================================
+Omnibus:                     1466.923   Durbin-Watson:                   0.166
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1918.481
+Skew:                          -0.312   Prob(JB):                         0.00
+Kurtosis:                       3.644   Cond. No.                     4.89e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 4.89e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Under H_0: slope for old words = slope for new words, p-value = 0.05244760124097003
+Under H_0: slope for old words = slope for stop words, p-value = 1.9660451044956062e-10
+Under H_0: slope for new words = slope for stop words, p-value = 0.009953304270806429
+
+
+THE FOLLOWING REGRESSION IS without_vocab
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.572
+Model:                            OLS   Adj. R-squared:                  0.572
+Method:                 Least Squares   F-statistic:                 1.584e+06
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:42:21   Log-Likelihood:             6.2221e+05
+No. Observations:             1187734   AIC:                        -1.244e+06
+Df Residuals:                 1187732   BIC:                        -1.244e+06
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -45.9002      0.038  -1215.826      0.000       -45.974   -45.826
+x1             0.0239    1.9e-05   1258.700      0.000         0.024     0.024
+==============================================================================
+Omnibus:                   387385.949   Durbin-Watson:                   0.082
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1591038.885
+Skew:                          -1.577   Prob(JB):                         0.00
+Kurtosis:                       7.712   Cond. No.                     5.71e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 5.71e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.973
+Model:                            OLS   Adj. R-squared:                  0.973
+Method:                 Least Squares   F-statistic:                 1.109e+04
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):          3.95e-240
+Time:                        14:43:30   Log-Likelihood:                 576.01
+No. Observations:                 304   AIC:                            -1148.
+Df Residuals:                     302   BIC:                            -1141.
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -63.6455      0.621   -102.428      0.000       -64.868   -62.423
+x1             0.0329      0.000    105.314      0.000         0.032     0.034
+==============================================================================
+Omnibus:                        2.374   Durbin-Watson:                   2.120
+Prob(Omnibus):                  0.305   Jarque-Bera (JB):                2.100
+Skew:                          -0.191   Prob(JB):                        0.350
+Kurtosis:                       3.143   Cond. No.                     5.90e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 5.9e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.214
+Model:                            OLS   Adj. R-squared:                  0.214
+Method:                 Least Squares   F-statistic:                 1.556e+04
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:43:32   Log-Likelihood:                -18999.
+No. Observations:               57165   AIC:                         3.800e+04
+Df Residuals:                   57163   BIC:                         3.802e+04
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -47.1636      0.405   -116.513      0.000       -47.957   -46.370
+x1             0.0254      0.000    124.747      0.000         0.025     0.026
+==============================================================================
+Omnibus:                     1469.641   Durbin-Watson:                   0.165
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1922.040
+Skew:                          -0.313   Prob(JB):                         0.00
+Kurtosis:                       3.645   Cond. No.                     5.70e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 5.7e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 2.291500322826323e-13
+Under H_0: slope for new words = slope for stop words, p-value = 0.0
+
+
+
+
+KL SCORES FOR NEW WORDS IS at_introduction
+
+
+
+THE FOLLOWING REGRESSION IS with_vocab
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.572
+Model:                            OLS   Adj. R-squared:                  0.572
+Method:                 Least Squares   F-statistic:                 7.934e+05
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:43:48   Log-Likelihood:             6.2273e+05
+No. Observations:             1187734   AIC:                        -1.245e+06
+Df Residuals:                 1187731   BIC:                        -1.245e+06
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -39.7105      0.196   -202.622      0.000       -40.095   -39.326
+x1             0.0208   9.92e-05    209.309      0.000         0.021     0.021
+x2          1.473e-08   4.58e-10     32.185      0.000      1.38e-08  1.56e-08
+==============================================================================
+Omnibus:                   392357.212   Durbin-Watson:                   0.077
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1635366.791
+Skew:                          -1.594   Prob(JB):                         0.00
+Kurtosis:                       7.784   Cond. No.                     4.78e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 4.78e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.877
+Model:                            OLS   Adj. R-squared:                  0.877
+Method:                 Least Squares   F-statistic:                 8.327e+05
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:45:00   Log-Likelihood:             2.8029e+05
+No. Observations:              233332   AIC:                        -5.606e+05
+Df Residuals:                  233329   BIC:                        -5.605e+05
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -45.2930      0.253   -178.949      0.000       -45.789   -44.797
+x1             0.0236      0.000    184.383      0.000         0.023     0.024
+x2          2.777e-08   5.64e-10     49.221      0.000      2.67e-08  2.89e-08
+==============================================================================
+Omnibus:                   131764.492   Durbin-Watson:                   0.260
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1655762.165
+Skew:                          -2.483   Prob(JB):                         0.00
+Kurtosis:                      15.069   Cond. No.                     6.02e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 6.02e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.214
+Model:                            OLS   Adj. R-squared:                  0.214
+Method:                 Least Squares   F-statistic:                     7783.
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:45:15   Log-Likelihood:                -18998.
+No. Observations:               57165   AIC:                         3.800e+04
+Df Residuals:                   57162   BIC:                         3.803e+04
+Df Model:                           2                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -51.0506      2.117    -24.112      0.000       -55.200   -46.901
+x1             0.0274      0.001     25.530      0.000         0.025     0.029
+x2         -9.212e-09   4.92e-09     -1.870      0.061     -1.89e-08  4.41e-10
+==============================================================================
+Omnibus:                     1466.923   Durbin-Watson:                   0.166
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1918.481
+Skew:                          -0.312   Prob(JB):                         0.00
+Kurtosis:                       3.644   Cond. No.                     4.89e+09
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 4.89e+09. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 1.9660451044956062e-10
+Under H_0: slope for new words = slope for stop words, p-value = 0.00031114979660551434
+
+
+THE FOLLOWING REGRESSION IS without_vocab
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.572
+Model:                            OLS   Adj. R-squared:                  0.572
+Method:                 Least Squares   F-statistic:                 1.584e+06
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:45:30   Log-Likelihood:             6.2221e+05
+No. Observations:             1187734   AIC:                        -1.244e+06
+Df Residuals:                 1187732   BIC:                        -1.244e+06
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -45.9002      0.038  -1215.826      0.000       -45.974   -45.826
+x1             0.0239    1.9e-05   1258.700      0.000         0.024     0.024
+==============================================================================
+Omnibus:                   387385.949   Durbin-Watson:                   0.082
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1591038.885
+Skew:                          -1.577   Prob(JB):                         0.00
+Kurtosis:                       7.712   Cond. No.                     5.71e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 5.71e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.876
+Model:                            OLS   Adj. R-squared:                  0.876
+Method:                 Least Squares   F-statistic:                 1.646e+06
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:46:42   Log-Likelihood:             2.7909e+05
+No. Observations:              233332   AIC:                        -5.582e+05
+Df Residuals:                  233330   BIC:                        -5.581e+05
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -57.5434      0.046  -1244.016      0.000       -57.634   -57.453
+x1             0.0298   2.32e-05   1282.930      0.000         0.030     0.030
+==============================================================================
+Omnibus:                   128120.074   Durbin-Watson:                   0.318
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):          1538577.123
+Skew:                          -2.407   Prob(JB):                         0.00
+Kurtosis:                      14.622   Cond. No.                     6.08e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 6.08e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.214
+Model:                            OLS   Adj. R-squared:                  0.214
+Method:                 Least Squares   F-statistic:                 1.556e+04
+Date:                Tue, 03 Mar 2015   Prob (F-statistic):               0.00
+Time:                        14:46:57   Log-Likelihood:                -18999.
+No. Observations:               57165   AIC:                         3.800e+04
+Df Residuals:                   57163   BIC:                         3.802e+04
+Df Model:                           1                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        -47.1636      0.405   -116.513      0.000       -47.957   -46.370
+x1             0.0254      0.000    124.747      0.000         0.025     0.026
+==============================================================================
+Omnibus:                     1469.641   Durbin-Watson:                   0.165
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1922.040
+Skew:                          -0.313   Prob(JB):                         0.00
+Kurtosis:                       3.645   Cond. No.                     5.70e+05
+==============================================================================
+
+Warnings:
+[1] The condition number is large, 5.7e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 2.291500322826323e-13
+Under H_0: slope for new words = slope for stop words, p-value = 0.0

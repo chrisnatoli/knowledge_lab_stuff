@@ -473,59 +473,97 @@ pdf.close()
 
 # Use OLS to test if the slopes of the lines for old words, new words,
 # and stopwords is the same. Only check dates in [1976,2000).
-slopes = dict()
-stderrs = dict()
-intercepts = dict()
-num_points = dict()
-for wordtype in wordtypes:
-    # Collect the datapoints from this wordtype.
-    scores = []
-    times = []
-    for word in words[wordtype]:
-        for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
-            score = kl_scores[wordtype][word][dates.index(d)]
-            if score is not None:
-                scores.append(score)
-                times.append(d[0] + (d[1]-1)/12)
+# Run four regressions:
+# -- either the data used for the KL scores of new words is only the scores
+#    when words are introduced, or the data covers the entire time series
+#    of scores for each new word;
+# -- either the only regressor is time or vocab size at each date is used
+#    as an additional regressor.
+# It is intentional that 'at introduction' 'without vocab' is the
+# last regression run, because these slopes and intercepts are used
+# for plotting linear fit lines.
+regression_output_filename = 'regression_output'
+with open(regression_output_filename, 'w') as fp:
+    slopes = dict()
+    stderrs = dict()
+    intercepts = dict()
+    num_points = dict()
+    which_new_kls = ['after_introduction', 'at_introduction']
+    regressions = ['with_vocab', 'without_vocab']
+    for which in which_new_kls:
+        fp.write('\n\n\n\nKL SCORES FOR NEW WORDS IS {}\n\n'.format(which))
+        for regression in regressions:
+            fp.write('\n\nTHE FOLLOWING REGRESSION IS {}\n'.format(regression))
+            for wordtype in wordtypes:
+                # Collect the datapoints from this wordtype.
+                scores = []
+                times = []
+                ds = []
+                for word in words[wordtype]:
+                    for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
+                        if (which == 'after_introduction'
+                            and wordtype == 'new'
+                            and first_appearances[word] != d):
+                            continue
+                        score = kl_scores[wordtype][word][dates.index(d)]
+                        if score is not None:
+                            scores.append(score)
+                            times.append(d[0] + (d[1]-1)/12)
+                            ds.append(d)
+                            
+                # Fit an OLS model with intercept. Record slope and stderr.
+                if regression == 'without_vocab':
+                    regressors = times
+                elif regression == 'with_vocab':
+                    regressors = np.array([times,
+                                           [ monthly_word_counts[d] for d in ds ]]).T
+                regressors = sm.add_constant(regressors)
+                results = sm.OLS(scores, regressors).fit()
+                fp.write(str(results.summary()) + '\n\n')
+
+                resids = results.resid
+                intercepts[wordtype] = results.params[0]
+                slopes[wordtype] = results.params[1]
+                stderrs[wordtype] = results.HC0_se[1] # Huber-White
+                num_points[wordtype] = len(scores)
                 
-    # Fit an OLS model with intercept. Record slope and stderr.
-    t = sm.add_constant(times)
-    model = sm.OLS(scores, t)
-    results = model.fit()
-    resids = results.resid
-    (beta0, beta1) = results.params
-    (std_err0, std_err1) = results.HC0_se # Use Huber-White, heteroskedastic
-    intercepts[wordtype] = beta0
-    slopes[wordtype] = beta1
-    stderrs[wordtype] = std_err1
-    num_points[wordtype] = len(scores)
-    print('{} words:\nslope = {}\nstderr = {}\n'
-          .format(wordtype, beta1, std_err1))
+                plt.scatter(times, [ monthly_vocab_size[d] for d in ds ], s=1)
+                plt.savefig('plots/multicollinearity_time_vocab.png')
 
-    plt.scatter(times, list(resids), s=1)
-    plt.savefig('plots/resid_{}_ols.png'.format(wordtype))
-    plt.close()
+                plt.scatter([ monthly_word_counts[d] for d in ds ],
+                            [ monthly_vocab_size[d] for d in ds ], s=1)
+                plt.savefig('plots/multicollinearity_wordcount_vocab.png')
 
-    sm.qqplot(resids, line='s')
-    plt.savefig('plots/resid_qq.png')
-    plt.close()
+                plt.scatter(times, list(resids), s=1)
+                plt.savefig('plots/resid_scatter_{}_{}_{}.png'
+                            .format(wordtype, which, regression))
+                plt.close()
 
-    (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
-    normal_curve = plt.normpdf(bins, np.mean(resids), np.std(resids))
-    plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
-    plt.savefig('plots/resid_hist.png')
-    plt.close()
+                sm.qqplot(resids, line='s')
+                plt.savefig('plots/resid_qq_{}_{}_{}.png'
+                            .format(wordtype, which, regression))
+                plt.close()
 
-# Use a simple t-test to test if the slopes are the same.
-for (i, wordtype_i) in enumerate(wordtypes):
-    for (j, wordtype_j) in [ (j,t) for (j,t) in enumerate(wordtypes) if j>i ]:
-        diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
-        stderr = np.sqrt(stderrs[wordtype_i]**2 + stderrs[wordtype_j]**2)
-        test_statistic = diff / stderr
-        df = num_points[wordtype_i] + num_points[wordtype_i] - 4
-        p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
-        print('Under H_0: slope for {} words = slope for {} words, p-value = {}'
-              .format(wordtype_i, wordtype_j, p))
+                (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
+                normal_curve = plt.normpdf(bins, np.mean(resids),
+                                           np.std(resids))
+                plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
+                plt.savefig('plots/resid_hist_{}_{}_{}.png'
+                            .format(wordtype, which, regression))
+                plt.close()
+
+            # Use a simple t-test to test if the slopes are the same.
+            for (i, wordtype_i) in enumerate(wordtypes):
+                for (j, wordtype_j) in [ (j,t) for (j,t)
+                                         in enumerate(wordtypes) if j>i ]:
+                    diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
+                    stderr = np.sqrt(stderrs[wordtype_i]**2 
+                                     + stderrs[wordtype_j]**2)
+                    test_statistic = diff / stderr
+                    df = num_points[wordtype_i] + num_points[wordtype_i] - 4
+                    p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
+                    fp.write('Under H_0: slope for {} words = slope for {} words, p-value = {}\n'
+                             .format(wordtype_i, wordtype_j, p))
 
 
 
