@@ -425,16 +425,18 @@ plt.close()
 # Rather than look at mean and stddev of a word over the entire duration of the
 # word's time series, just look at the next n years. Check
 # out the colored scatterplot and the histograms of means and stddevs again.
+# Only do this for words introduced after 1975.
 pdf = PdfPages('plots/scatter_symKL_partial_mean_vs_std_colored_by_yr.pdf')
 first_appearances = { row[new_words_header.index('word')]
                       : string_to_date(row[
                           new_words_header.index('first appearance')])
                       for row in new_words_table }
-for num_years in range(2,40):
+for num_years in range(2,34):
     partial_means = []
     partial_stddevs = []
     colors = []
-    for word in words['new']:
+    areas = []
+    for word in [ w for w in words['new'] if first_appearances[w]>=(1976,1) ]:
         start = first_appearances[word]
         end = (start[0] + num_years, start[1])
         if end > dates[-1]:
@@ -444,19 +446,20 @@ for num_years in range(2,40):
         if scores != []:
             partial_means.append(np.mean(scores))
             partial_stddevs.append(np.std(scores))
-            colors.append(coolwarm((start[0]-1970)/(2000-1970)))
+            colors.append(coolwarm((start[0]-1976)/(2000-1976)))
+            areas.append((log_term_freqs[word] - 5)**2.5)
     
     fig, ax = plt.subplots()
 
     ax.set_axis_bgcolor('0.25')
-    ax.scatter(partial_means, partial_stddevs, s=1, color=colors)
-    ax.set_xlim([0, 2.5])
-    ax.set_ylim([0, 0.5])
+    ax.scatter(partial_means, partial_stddevs, s=areas, color=colors, alpha=0.3)
+    ax.set_xlim([1.2, 2.5])
+    ax.set_ylim([0, 0.4])
 
     m = plt.cm.ScalarMappable(cmap=coolwarm)
     m.set_array([0,1])
     cbar = plt.colorbar(m, ticks=[0,1])
-    cbar.set_ticklabels(['1970','2000'])
+    cbar.set_ticklabels(['1976','2000'])
     cbar.set_label('First appearance')
 
     plt.xlabel('Mean KL score of a given word over {} years'.format(num_years))
@@ -528,10 +531,17 @@ with open(regression_output_filename, 'w') as fp:
                 num_points[wordtype] = len(scores)
                 
                 plt.scatter(times, [ monthly_vocab_size[d] for d in ds ], s=1)
+                plt.xlabel('Time')
+                plt.ylabel('Monthly vocabulary size')
                 plt.savefig('plots/multicollinearity_time_vocab.png')
 
+                for d in ds:
+                    if monthly_word_counts[d] == 0:
+                        print(d)
                 plt.scatter([ monthly_word_counts[d] for d in ds ],
                             [ monthly_vocab_size[d] for d in ds ], s=1)
+                plt.xlabel('Monthy word count')
+                plt.ylabel('Monthly vocabulary size')
                 plt.savefig('plots/multicollinearity_wordcount_vocab.png')
 
                 plt.scatter(times, list(resids), s=1)
