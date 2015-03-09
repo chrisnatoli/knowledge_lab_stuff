@@ -1,0 +1,106 @@
+AFTER INTRODUCTION
+WITH VOCAB
+
+Model: KL score for old words ~ time, vocab size, time * vocab size
+R^2 = 0.7348884899458379
+constant:		coefficient = -23.621258099096487	p-value = 0.0
+time:			coefficient = 0.012550902936144548	p-value = 0.0
+vocab size:		coefficient = 1.0737186008910212e-05	p-value = 0.0
+time * vocab size:	coefficient = -5.327272287668483e-09	p-value = 0.0
+
+Model: KL score for new words at or after introduction ~ time, vocab size, time * vocab size
+R^2 = 0.9946661763157028
+constant:		coefficient = -22.569704631218002	p-value = 0.0
+time:			coefficient = 0.012024240121639789	p-value = 0.0
+vocab size:		coefficient = 1.1172222419730361e-05	p-value = 0.0
+time * vocab size:	coefficient = -5.531175474421065e-09	p-value = 0.0
+
+Model: KL score for stop words ~ time, vocab size, time * vocab size
+R^2 = 0.21777765880660283
+constant:		coefficient = -34.54991062803795	p-value = 0.0
+time:			coefficient = 0.018947324348256155	p-value = 0.0
+vocab size:		coefficient = 8.163296683512787e-06	p-value = 0.0
+time * vocab size:	coefficient = -4.061813054486587e-09	p-value = 0.0
+
+Under H_0: slope for old words = slope for new words, p-value = 0.3419461497502534
+Under H_0: slope for old words = slope for stop words, p-value = 2.625920814125493e-08
+Under H_0: slope for new words = slope for stop words, p-value = 6.135191998879463e-08
+
+
+
+WITHOUT VOCAB
+
+Model: KL score for old words ~ time
+R^2 = 0.7159010295438392
+constant:		coefficient = -53.12921472884679	p-value = 0.0
+time:			coefficient = 0.027575800045943906	p-value = 0.0
+
+Model: KL score for new words at or after introduction ~ time
+R^2 = 0.9731400306649696
+constant:		coefficient = -63.30255573989619	p-value = 0.0
+time:			coefficient = 0.03273988600910873	p-value = 0.0
+
+Model: KL score for stop words ~ time
+R^2 = 0.21398340600528676
+constant:		coefficient = -47.163622417829075	p-value = 0.0
+time:			coefficient = 0.025397550616200897	p-value = 0.0
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 0.0
+Under H_0: slope for new words = slope for stop words, p-value = 0.0
+
+
+
+AT INTRODUCTION
+WITH VOCAB
+
+Model: KL score for old words ~ time, vocab size, time * vocab size
+R^2 = 0.7348884899458379
+constant:		coefficient = -23.621258099096487	p-value = 0.0
+time:			coefficient = 0.012550902936144548	p-value = 0.0
+vocab size:		coefficient = 1.0737186008910212e-05	p-value = 0.0
+time * vocab size:	coefficient = -5.327272287668483e-09	p-value = 0.0
+
+Model: KL score for new words at introduction ~ time, vocab size, time * vocab size
+R^2 = 0.9145255823184901
+constant:		coefficient = -28.013746954078226	p-value = 0.0
+time:			coefficient = 0.014789090287942253	p-value = 0.0
+vocab size:		coefficient = 1.0027868506055443e-05	p-value = 0.0
+time * vocab size:	coefficient = -4.970445533460135e-09	p-value = 0.0
+
+Model: KL score for stop words ~ time, vocab size, time * vocab size
+R^2 = 0.21777765880660283
+constant:		coefficient = -34.54991062803795	p-value = 0.0
+time:			coefficient = 0.018947324348256155	p-value = 0.0
+vocab size:		coefficient = 8.163296683512787e-06	p-value = 0.0
+time * vocab size:	coefficient = -4.061813054486587e-09	p-value = 0.0
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 2.625920814125493e-08
+Under H_0: slope for new words = slope for stop words, p-value = 0.0002962702672195672
+
+
+
+WITHOUT VOCAB
+
+Model: KL score for old words ~ time
+R^2 = 0.7159010295438392
+constant:		coefficient = -53.12921472884679	p-value = 0.0
+time:			coefficient = 0.027575800045943906	p-value = 0.0
+
+Model: KL score for new words at introduction ~ time
+R^2 = 0.8925810851825937
+constant:		coefficient = -58.71206857083033	p-value = 0.0
+time:			coefficient = 0.030415669761982414	p-value = 0.0
+
+Model: KL score for stop words ~ time
+R^2 = 0.21398340600528676
+constant:		coefficient = -47.163622417829075	p-value = 0.0
+time:			coefficient = 0.025397550616200897	p-value = 0.0
+
+Under H_0: slope for old words = slope for new words, p-value = 0.0
+Under H_0: slope for old words = slope for stop words, p-value = 0.0
+Under H_0: slope for new words = slope for stop words, p-value = 0.0
+
+
+

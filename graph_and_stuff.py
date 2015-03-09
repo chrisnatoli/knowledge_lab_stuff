@@ -15,18 +15,19 @@ def remove_nones(xs):
     return [ x for x in xs if x is not None ]
 
 
-plots_directory = 'plots_0.9density/'
+density = 0.8
+plots_directory = 'plots/{}_density/'.format(density)
 
 
 # Unpack the table of new words.
-new_words_filename = 'new_words.csv'
+new_words_filename = 'new_words_{}density.csv'.format(density)
 with open(new_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     new_words_header = next(reader)
     new_words_table = sorted([ row for row in reader ])
 
 # Unpack the table of old words.
-old_words_filename = 'old_words.csv'
+old_words_filename = 'old_words_{}density.csv'.format(density)
 with open(old_words_filename) as fp:
     reader = csv.reader(fp, delimiter=',')
     old_words_header = next(reader)
@@ -58,7 +59,7 @@ with open(counts_filename) as fp:
                            for row in reader }
 
 # Unpack the KL score data and compute means and stddevs for each word.
-kls_filename = '_word_symKL_scores.csv'
+kls_filename = '_word_symKL_scores_{}density.csv'.format(density)
 wordtypes = ['old','new','stop']
 words = dict()
 kl_scores = dict()
@@ -68,6 +69,8 @@ kl_stddevs = dict()
 new_words_left_mode = []
 new_words_right_mode = []
 for wordtype in wordtypes:
+    if wordtype == 'stop':
+        kls_filename = '_word_symKL_scores.csv' # (cheap hack)
     # Load the data into a dictionary from words to lists of scores.
     kl_scores[wordtype] = dict()
     words[wordtype] = []
@@ -492,7 +495,7 @@ pdf.close()
 # It is intentional that 'at introduction' 'without vocab' is the
 # last regression run, because these slopes and intercepts are used
 # for plotting linear fit lines.
-regression_output_filename = 'regression_output'
+regression_output_filename = 'regression_output_{}density'.format(density)
 with open(regression_output_filename, 'w') as fp:
     slopes = dict()
     stderrs = dict()
@@ -573,6 +576,7 @@ with open(regression_output_filename, 'w') as fp:
                 plt.ylabel('Monthly vocabulary size')
                 plt.savefig(plots_directory
                             + 'multicollinearity_time_vocab.png')
+                plt.close()
 
                 # Make a scatterplot of vocab size vs monthly word count
                 # to check for multicollinearity. (Monthly word count
@@ -583,6 +587,7 @@ with open(regression_output_filename, 'w') as fp:
                 plt.ylabel('Monthly vocabulary size')
                 plt.savefig(plots_directory
                             + 'multicollinearity_wordcount_vocab.png')
+                plt.close()
 
                 # Make a scatterplot of residuals over time to check
                 # for heteroscedasticity.
