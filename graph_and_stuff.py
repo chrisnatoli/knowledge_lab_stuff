@@ -15,6 +15,7 @@ def remove_nones(xs):
     return [ x for x in xs if x is not None ]
 
 
+plots_directory = 'plots_0.9density/'
 
 
 # Unpack the table of new words.
@@ -132,7 +133,7 @@ plt.tick_params(labelsize=8)
 plt.xlabel('Time')
 plt.ylabel('Number of new words')
 plt.tight_layout()
-plt.savefig('plots/new_words_per_date.png', dpi=150)
+plt.savefig(plots_directory + 'new_words_per_date.png', dpi=150)
 plt.close()
 
 
@@ -143,15 +144,18 @@ plt.close()
 # - another of stddev of the KL scores for each word.
 for wordtype in wordtypes[:2]:
     plt.hist(flat_kl_scores[wordtype], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_scores.png'.format(wordtype))
+    plt.savefig(plots_directory
+                + 'hist_of_{}_symKL_scores.png'.format(wordtype))
     plt.close()
     
     plt.hist(kl_means[wordtype], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_means.png'.format(wordtype))
+    plt.savefig(plots_directory
+                + 'hist_of_{}_symKL_means.png'.format(wordtype))
     plt.close()
     
     plt.hist(kl_stddevs[wordtype], bins=50)
-    plt.savefig('plots/hist_of_{}_symKL_stddevs.png'.format(wordtype))
+    plt.savefig(plots_directory
+                + 'hist_of_{}_symKL_stddevs.png'.format(wordtype))
     plt.close()
 
 
@@ -173,7 +177,7 @@ for wordtype in wordtypes:
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 plt.legend(loc='lower right', prop={'size':8})
-plt.savefig('plots/scatter_symKL_mean_vs_std_all_words.png')
+plt.savefig(plots_directory + 'scatter_symKL_mean_vs_std_all_words.png')
 plt.close()
 
 
@@ -277,7 +281,7 @@ for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
     elif z == rel_doc_freqs:
         cbar.set_label('Relative document frequency')
         colored_by = 'rdf'
-    plt.savefig('plots/scatter_symKL_mean_vs_std_colored_by_{}.png'
+    plt.savefig(plots_directory + 'scatter_symKL_mean_vs_std_colored_by_{}.png'
                 .format(colored_by))
     plt.close()
 
@@ -356,8 +360,9 @@ for colored_by in colored_bys:
 
     plt.xlabel('Mean KL score of a given word over time')
     plt.ylabel('Standard deviation of KL scores for a given word over time')
-    plt.savefig('plots/scatter_symKL_mean_vs_std_colored_by_{}_with_old.png'
-                .format(colored_by), dpi=200)
+    plt.savefig(plots_directory
+                + 'scatter_symKL_mean_vs_std_colored_by_{}_with_old.png'
+                  .format(colored_by), dpi=200)
     plt.close()
 
 
@@ -397,7 +402,7 @@ cbar.set_label('Log term frequency')
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 
-plt.savefig('plots/scatter_symKL_mean_vs_std_old_sample_logtf.png')
+plt.savefig(plots_directory + 'scatter_symKL_mean_vs_std_old_sample_logtf.png')
 plt.close()
 
 
@@ -410,13 +415,13 @@ firsts = [ first_appearances[word] for word in words['new']
 plt.scatter(firsts, kl_means['new'], s=1)
 plt.xlabel('Date of first appearance')
 plt.ylabel('Mean KL score of a given word over time')
-plt.savefig('plots/scatter_mean_KL_vs_first_appearance.png')
+plt.savefig(plots_directory + 'scatter_mean_KL_vs_first_appearance.png')
 plt.close()
 
 plt.scatter(firsts, kl_stddevs['new'], s=1)
 plt.xlabel('Date of first appearance')
 plt.ylabel('Standard deviation of KL scores of a given word over time')
-plt.savefig('plots/scatter_stddev_KL_vs_first_appearance.png')
+plt.savefig(plots_directory + 'scatter_stddev_KL_vs_first_appearance.png')
 plt.close()
 
 
@@ -426,7 +431,8 @@ plt.close()
 # word's time series, just look at the next n years. Check
 # out the colored scatterplot and the histograms of means and stddevs again.
 # Only do this for words introduced after 1975.
-pdf = PdfPages('plots/scatter_symKL_partial_mean_vs_std_colored_by_yr.pdf')
+pdf = PdfPages(plots_directory
+               + 'scatter_symKL_partial_mean_vs_std_colored_by_yr.pdf')
 first_appearances = { row[new_words_header.index('word')]
                       : string_to_date(row[
                           new_words_header.index('first appearance')])
@@ -452,7 +458,8 @@ for num_years in range(2,34):
     fig, ax = plt.subplots()
 
     ax.set_axis_bgcolor('0.25')
-    ax.scatter(partial_means, partial_stddevs, s=areas, color=colors, alpha=0.3)
+    ax.scatter(partial_means, partial_stddevs,
+               s=areas, color=colors, alpha=0.3)
     ax.set_xlim([1.2, 2.5])
     ax.set_ylim([0, 0.4])
 
@@ -491,12 +498,12 @@ with open(regression_output_filename, 'w') as fp:
     stderrs = dict()
     intercepts = dict()
     num_points = dict()
-    which_new_kls = ['after_introduction', 'at_introduction']
-    regressions = ['with_vocab', 'without_vocab']
-    for which in which_new_kls:
-        fp.write('\n\n\n\nKL SCORES FOR NEW WORDS IS {}\n\n'.format(which))
-        for regression in regressions:
-            fp.write('\n\nTHE FOLLOWING REGRESSION IS {}\n'.format(regression))
+    new_kls_datas = ['after introduction', 'at introduction']
+    regression_models = ['with vocab', 'without vocab']
+    for new_kls_data in new_kls_datas:
+        fp.write('{}\n'.format(new_kls_data.upper()))
+        for model in regression_models:
+            fp.write('{}\n\n'.format(model.upper()))
             for wordtype in wordtypes:
                 # Collect the datapoints from this wordtype.
                 scores = []
@@ -504,7 +511,7 @@ with open(regression_output_filename, 'w') as fp:
                 ds = []
                 for word in words[wordtype]:
                     for d in [ d for d in dates if (1976,1) <= d < (2000,1) ]:
-                        if (which == 'after_introduction'
+                        if (new_kls_data == 'after introduction'
                             and wordtype == 'new'
                             and first_appearances[word] != d):
                             continue
@@ -515,52 +522,98 @@ with open(regression_output_filename, 'w') as fp:
                             ds.append(d)
                             
                 # Fit an OLS model with intercept. Record slope and stderr.
-                if regression == 'without_vocab':
+                if model == 'without vocab':
                     regressors = times
-                elif regression == 'with_vocab':
-                    regressors = np.array([times,
-                                           [ monthly_word_counts[d] for d in ds ]]).T
+                elif model == 'with vocab':
+                    counts = [ monthly_word_counts[d] for d in ds ]
+                    interaction = [ times[i] * counts[i]
+                                    for i in range(len(times)) ]
+                    regressors = np.array([times, counts, interaction]).T
                 regressors = sm.add_constant(regressors)
                 results = sm.OLS(scores, regressors).fit()
-                fp.write(str(results.summary()) + '\n\n')
 
+                # Write some regression output.
+                fp.write('Model: KL score for {} words '.format(wordtype))
+                if wordtype == 'new' and new_kls_data == 'after introduction':
+                    fp.write('at or after introduction ')
+                elif wordtype == 'new' and new_kls_data == 'at introduction':
+                    fp.write('at introduction ')
+                fp.write('~ time')
+                if model == 'with vocab':
+                    fp.write(', vocab size, time * vocab size')
+                fp.write('\nR^2 = {}\n'.format(results.rsquared))
+                for i in range(len(results.params)):
+                    if i == 0: regressor_name = 'constant:\t\t'
+                    elif i == 1: regressor_name = 'time:\t\t\t'
+                    elif i == 2: regressor_name = 'vocab size:\t\t'
+                    elif i == 3: regressor_name = 'time * vocab size:\t'
+
+                    # Get the p-value using Huber-White standard error.
+                    test_statistic = abs(results.params[i] / results.HC0_se[i])
+                    p = 2 * (1 - scipy.stats.t.cdf(test_statistic,
+                                                   results.df_resid))
+
+                    fp.write('{}coefficient = {}\tp-value = {}\n'
+                             .format(regressor_name, results.params[i], p))
+                fp.write('\n')
+                
+
+                
+                # Unpack pertinent regression results.
                 resids = results.resid
                 intercepts[wordtype] = results.params[0]
                 slopes[wordtype] = results.params[1]
                 stderrs[wordtype] = results.HC0_se[1] # Huber-White
                 num_points[wordtype] = len(scores)
-                
+
+                # Make a scatterplot of time vs vocab size to check
+                # for multicollinearity.
                 plt.scatter(times, [ monthly_vocab_size[d] for d in ds ], s=1)
                 plt.xlabel('Time')
                 plt.ylabel('Monthly vocabulary size')
-                plt.savefig('plots/multicollinearity_time_vocab.png')
+                plt.savefig(plots_directory
+                            + 'multicollinearity_time_vocab.png')
 
-                for d in ds:
-                    if monthly_word_counts[d] == 0:
-                        print(d)
+                # Make a scatterplot of vocab size vs monthly word count
+                # to check for multicollinearity. (Monthly word count
+                # was considered as a regressor but it ended up collinear.)
                 plt.scatter([ monthly_word_counts[d] for d in ds ],
                             [ monthly_vocab_size[d] for d in ds ], s=1)
                 plt.xlabel('Monthy word count')
                 plt.ylabel('Monthly vocabulary size')
-                plt.savefig('plots/multicollinearity_wordcount_vocab.png')
+                plt.savefig(plots_directory
+                            + 'multicollinearity_wordcount_vocab.png')
 
+                # Make a scatterplot of residuals over time to check
+                # for heteroscedasticity.
                 plt.scatter(times, list(resids), s=1)
-                plt.savefig('plots/resid_scatter_{}_{}_{}.png'
-                            .format(wordtype, which, regression))
+                plt.savefig(plots_directory + 'resid_scatter_{}_{}_{}.png'
+                            .format(wordtype,
+                                    new_kls_data.replace(' ',''),
+                                    model.replace(' ','')))
                 plt.close()
 
+                # Make a QQ-plot of residuals to check for normality.
                 sm.qqplot(resids, line='s')
-                plt.savefig('plots/resid_qq_{}_{}_{}.png'
-                            .format(wordtype, which, regression))
+                plt.savefig(plots_directory + 'resid_qq_{}_{}_{}.png'
+                            .format(wordtype,
+                                    new_kls_data.replace(' ',''),
+                                    model.replace(' ','')))
                 plt.close()
 
+                # Make a histogram of residuals with fitted normal curve
+                # to check for normality of residuals.
                 (_, bins, _) = plt.hist(resids, 200, normed=1, color='k')
                 normal_curve = plt.normpdf(bins, np.mean(resids),
                                            np.std(resids))
                 plt.plot(bins, normal_curve, 'r--', linewidth=1.5)
-                plt.savefig('plots/resid_hist_{}_{}_{}.png'
-                            .format(wordtype, which, regression))
+                plt.savefig(plots_directory + 'resid_hist_{}_{}_{}.png'
+                            .format(wordtype,
+                                    new_kls_data.replace(' ',''),
+                                    model.replace(' ','')))
                 plt.close()
+
+
 
             # Use a simple t-test to test if the slopes are the same.
             for (i, wordtype_i) in enumerate(wordtypes):
@@ -572,8 +625,11 @@ with open(regression_output_filename, 'w') as fp:
                     test_statistic = diff / stderr
                     df = num_points[wordtype_i] + num_points[wordtype_i] - 4
                     p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
-                    fp.write('Under H_0: slope for {} words = slope for {} words, p-value = {}\n'
-                             .format(wordtype_i, wordtype_j, p))
+                    fp.write('Under H_0: slope for {} words '
+                             .format(wordtype_i)
+                             + '= slope for {} words, p-value = {}\n'
+                             .format(wordtype_j, p))
+            fp.write('\n\n\n')
 
 
 
@@ -611,18 +667,20 @@ for wordtype in wordtypes:
     upper_errs[wordtype] = []
     t = []
     for year in years:
-        # Rather than plot one point for each month, plot one point for each year.
-        # collapsing across the twelve months.
+        # Rather than plot one point for each month, plot one point 
+        # for each year, collapsing across the twelve months.
         scores = []
         for d in [ d for d in dates if d[0] == year ]:
             if wordtype == 'old' or wordtype == 'stop':
-                scores.extend(remove_nones([ kl_scores[wordtype][word][dates.index(d)]
-                                             for word in words[wordtype] ]))
+                scores.extend(
+                       remove_nones([ kl_scores[wordtype][word][dates.index(d)]
+                                      for word in words[wordtype] ]))
             elif wordtype == 'new':
                 new_words_this_month = [ word for word in words['new']
                                          if first_appearances[word] == d ]
-                scores.extend(remove_nones([ kl_scores['new'][word][dates.index(d)]
-                                             for word in new_words_this_month ]))
+                scores.extend(
+                       remove_nones([ kl_scores['new'][word][dates.index(d)]
+                                      for word in new_words_this_month ]))
 
         if scores == []:
             kl_means_over_words[wordtype].append(None)
@@ -656,7 +714,7 @@ for wordtype in wordtypes:
 for word in words['new']:
     xs = []
     ys = []
-    for date in [ d for d in dates if first_appearances[word] <= d < (2000,1) ]:
+    for date in [ d for d in dates if first_appearances[word] <= d <(2000,1) ]:
         score = kl_scores['new'][word][dates.index(date)]
         if score is not None:
             ys.append(score)
@@ -684,11 +742,11 @@ ax.legend(h1+h2, l1+l2, loc='lower right', prop={'size':8})
 
 ax.set_xlim([1969, 2000])
 plt.tight_layout()
-plt.savefig('plots/time_series.png', dpi=200)
+plt.savefig(plots_directory + 'time_series.png', dpi=200)
 
 ax.set_xlim([1976, 2000])
 ax.set_ylim([1.2, 2.3])
-plt.savefig('plots/time_series_zoom.png', dpi=200)
+plt.savefig(plots_directory + 'time_series_zoom.png', dpi=200)
 plt.close()
 
 
@@ -732,7 +790,7 @@ ax.set_xlabel('Time')
 ax.set_ylabel('Symmetric KL divergence')
 
 plt.tight_layout()
-plt.savefig('plots/time_series_OLSfit.png', dpi=200)
+plt.savefig(plots_directory + 'time_series_OLSfit.png', dpi=200)
 plt.close()
     
 
@@ -769,11 +827,11 @@ plt.xlabel('Time')
 plt.ylabel('Symmetric KL divergence')
 
 ax.set_xlim([1969, 2000])
-plt.savefig('plots/time_series_colored_by_time.png', dpi=200)
+plt.savefig(plots_directory + 'time_series_colored_by_time.png', dpi=200)
 
 ax.set_xlim([1976, 2000])
 ax.set_ylim([1.2, 2.3])
-plt.savefig('plots/time_series_zoom_colored_by_time.png', dpi=200)
+plt.savefig(plots_directory + 'time_series_zoom_colored_by_time.png', dpi=200)
 plt.close()
 
 
