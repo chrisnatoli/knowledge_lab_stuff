@@ -4,7 +4,7 @@ from datetime import datetime
 
 the_beginning = datetime.now()
 
-new_words_filename = 'new_words.csv'
+new_words_filename = 'new_words_0.8density.csv'
 kl_directory = 'medline_monthly-KL/'
 new_words_header = ['word', 'first appearance', 'num months', 'term frequency']
 kl_header = ['term', 'KL(tf,co)', 'KL(co,tf)', 'sym_KL_div']
@@ -64,7 +64,7 @@ kl_table.insert(0, header)
 
 
 # Write the table to a csv file.
-output_filename = 'new_word_symKL_scores.csv'
+output_filename = 'new_word_symKL_scores_0.8density.csv'
 with open(output_filename, 'w') as fp:
     for row in kl_table:
         fp.write(','.join(row) + '\n')

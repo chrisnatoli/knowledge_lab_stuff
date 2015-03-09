@@ -2,15 +2,16 @@ import csv
 import os
 from datetime import datetime
 import multiprocessing
+import numpy as np
 
 
 the_beginning = datetime.now()
 
 directory = 'monthly_abstracts/'
 corpus_filenames = sorted([ f for f in os.listdir(directory) ])
-new_words_filename = 'new_words.csv'
+new_words_filename = 'new_words_0.8density.csv'
 stopwords_filename = 'stopwords.txt'
-output_filename = 'old_words.csv'
+output_filename = 'old_words_0.8density.csv'
 
 
 # Converts '2007-7.txt' to the tuple (2007,7).
@@ -67,7 +68,7 @@ with open(stopwords_filename) as fp:
 # -- they aren't in a given list of stopwords,
 # -- they aren't present in every single month in the relevant interval of time,
 # -- they are in at least 90% of the documents in the relevant interval of time.
-min_density = 0.9
+min_density = 0.8
 start_date = (1970,1)#(2007,3)#
 end_date = (2000,1)#(2009,1)#
 relevant_dates = [ d for d in dates if start_date <= d < end_date ]
@@ -111,6 +112,14 @@ print('\nFinished finding old words in {}'
 print(old_words)
 print('There are {} old words.\n'.format(len(old_words)))
 
+
+
+# At a minimum density of 80%, there are 12k old words. This
+# is way too much to work through, and it seems like the VM doesn't
+# have enough memory. Take a random sample of 6000 old words instead.
+if min_density == 0.8:
+    old_words = sorted(list(np.random.choice(old_words, size=6000,
+                                             replace=False)))
 
 
 

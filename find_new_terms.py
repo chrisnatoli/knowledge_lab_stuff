@@ -54,7 +54,7 @@ print('All text was read in {}\n'.format(datetime.now() - the_beginning))
 num_processes = 4
 stdout_lock = multiprocessing.Lock()
 manager = multiprocessing.Manager()
-min_density = 0.9
+min_density = 0.8
 start_date = (1970,1)#(2007,3)#
 end_date = (2000,1)#(2009,1)#
 relevant_dates = [ d for d in dates if start_date <= d < end_date ]
@@ -242,7 +242,7 @@ for row in table:
 table.sort()
 table.insert(0, header)
 
-output_filename = 'new_words.csv'
+output_filename = 'new_words_0.8density.csv'
 with open(output_filename, 'w', newline='') as fp:
     writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     writer.writerows(table)
