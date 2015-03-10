@@ -2,52 +2,68 @@ AFTER INTRODUCTION
 WITH VOCAB
 
 Model: KL score for old words ~ time, vocab size, time * vocab size
-R^2 = 0.5874950372212537
-constant:		coefficient = -20.362400541383792	p-value = 0.0
-time:			coefficient = 0.010896996547468977	p-value = 0.0
-vocab size:		coefficient = 9.68265176530074e-06	p-value = 0.0
-time * vocab size:	coefficient = -4.8054249971516016e-09	p-value = 0.0
+constant:		coefficient = -3.25147e+01	normalized coefficient = 1.00054e+00	p-value = 0.00000e+00
+time:			coefficient = 1.69257e-02	normalized coefficient = -5.20834e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 4.83525e-04	normalized coefficient = -1.48789e-05	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.39809e-07	normalized coefficient = 7.37938e-09	p-value = 0.00000e+00
+
+R^2 for KL score ~ time					0.57153
+R^2 for KL score ~ vocab size				0.56063
+R^2 for KL score ~ time, vocab size			0.57244
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.58800
+
 
 Model: KL score for new words at or after introduction ~ time, vocab size, time * vocab size
-R^2 = 0.9925826288981241
-constant:		coefficient = -25.372637265182362	p-value = 0.0
-time:			coefficient = 0.0134470433532975	p-value = 0.0
-vocab size:		coefficient = 1.0732453483084571e-05	p-value = 0.0
-time * vocab size:	coefficient = -5.315035538713444e-09	p-value = 0.0
+constant:		coefficient = -3.77789e+01	normalized coefficient = 1.00053e+00	p-value = 0.00000e+00
+time:			coefficient = 1.95796e-02	normalized coefficient = -5.18543e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 5.14044e-04	normalized coefficient = -1.36139e-05	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.54199e-07	normalized coefficient = 6.73218e-09	p-value = 0.00000e+00
+
+R^2 for KL score ~ time					0.97349
+R^2 for KL score ~ vocab size				0.96414
+R^2 for KL score ~ time, vocab size			0.97868
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.99297
+
 
 Model: KL score for stop words ~ time, vocab size, time * vocab size
-R^2 = 0.21777765880660283
-constant:		coefficient = -34.54991062803795	p-value = 0.0
-time:			coefficient = 0.018947324348256155	p-value = 0.0
-vocab size:		coefficient = 8.163296683512787e-06	p-value = 0.0
-time * vocab size:	coefficient = -4.061813054486587e-09	p-value = 0.0
+constant:		coefficient = -4.54505e+01	normalized coefficient = 1.00055e+00	p-value = 0.00000e+00
+time:			coefficient = 2.43757e-02	normalized coefficient = -5.36605e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 4.13381e-04	normalized coefficient = -9.10015e-06	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.05642e-07	normalized coefficient = 4.52699e-09	p-value = 0.00000e+00
 
-Under H_0: slope for old words = slope for new words, p-value = 0.010019266355436374
-Under H_0: slope for old words = slope for stop words, p-value = 2.717603919677458e-12
-Under H_0: slope for new words = slope for stop words, p-value = 0.00029916694939657873
+R^2 for KL score ~ time					0.21398
+R^2 for KL score ~ vocab size				0.20659
+R^2 for KL score ~ time, vocab size			0.21399
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.21783
+
+
+Under H_0: slope for old words = slope for new words, p-value = 2.145464e-04
+Under H_0: slope for old words = slope for stop words, p-value = 3.363310e-12
+Under H_0: slope for new words = slope for stop words, p-value = 2.016671e-04
+
+
 
 
 
 WITHOUT VOCAB
 
 Model: KL score for old words ~ time
-R^2 = 0.5715342162899714
-constant:		coefficient = -45.90016670673047	p-value = 0.0
-time:			coefficient = 0.02390295188848975	p-value = 0.0
+constant:		coefficient = -4.59002e+01	normalized coefficient = 1.00052e+00	p-value = 0.00000e+00
+time:			coefficient = 2.39030e-02	normalized coefficient = -5.21031e-04	p-value = 0.00000e+00
 
 Model: KL score for new words at or after introduction ~ time
-R^2 = 0.9734924759924353
-constant:		coefficient = -63.64548323947773	p-value = 0.0
-time:			coefficient = 0.032912514105744334	p-value = 0.0
+constant:		coefficient = -6.36455e+01	normalized coefficient = 1.00052e+00	p-value = 0.00000e+00
+time:			coefficient = 3.29125e-02	normalized coefficient = -5.17390e-04	p-value = 0.00000e+00
 
 Model: KL score for stop words ~ time
-R^2 = 0.21398340600528676
-constant:		coefficient = -47.163622417829075	p-value = 0.0
-time:			coefficient = 0.025397550616200897	p-value = 0.0
+constant:		coefficient = -4.71636e+01	normalized coefficient = 1.00054e+00	p-value = 0.00000e+00
+time:			coefficient = 2.53976e-02	normalized coefficient = -5.38789e-04	p-value = 0.00000e+00
 
-Under H_0: slope for old words = slope for new words, p-value = 0.0
-Under H_0: slope for old words = slope for stop words, p-value = 2.291500322826323e-13
-Under H_0: slope for new words = slope for stop words, p-value = 0.0
+Under H_0: slope for old words = slope for new words, p-value = 0.000000e+00
+Under H_0: slope for old words = slope for stop words, p-value = 2.291500e-13
+Under H_0: slope for new words = slope for stop words, p-value = 0.000000e+00
+
+
 
 
 
@@ -55,52 +71,68 @@ AT INTRODUCTION
 WITH VOCAB
 
 Model: KL score for old words ~ time, vocab size, time * vocab size
-R^2 = 0.5874950372212537
-constant:		coefficient = -20.362400541383792	p-value = 0.0
-time:			coefficient = 0.010896996547468977	p-value = 0.0
-vocab size:		coefficient = 9.68265176530074e-06	p-value = 0.0
-time * vocab size:	coefficient = -4.8054249971516016e-09	p-value = 0.0
+constant:		coefficient = -3.25147e+01	normalized coefficient = 1.00054e+00	p-value = 0.00000e+00
+time:			coefficient = 1.69257e-02	normalized coefficient = -5.20834e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 4.83525e-04	normalized coefficient = -1.48789e-05	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.39809e-07	normalized coefficient = 7.37938e-09	p-value = 0.00000e+00
+
+R^2 for KL score ~ time					0.57153
+R^2 for KL score ~ vocab size				0.56063
+R^2 for KL score ~ time, vocab size			0.57244
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.58800
+
 
 Model: KL score for new words at introduction ~ time, vocab size, time * vocab size
-R^2 = 0.895601001041449
-constant:		coefficient = -25.951946189512444	p-value = 0.0
-time:			coefficient = 0.013746466795137552	p-value = 0.0
-vocab size:		coefficient = 9.607903816227348e-06	p-value = 0.0
-time * vocab size:	coefficient = -4.760121105491453e-09	p-value = 0.0
+constant:		coefficient = -3.62616e+01	normalized coefficient = 1.00053e+00	p-value = 0.00000e+00
+time:			coefficient = 1.88284e-02	normalized coefficient = -5.19514e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 4.81062e-04	normalized coefficient = -1.32735e-05	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.38035e-07	normalized coefficient = 6.56789e-09	p-value = 0.00000e+00
+
+R^2 for KL score ~ time					0.87584
+R^2 for KL score ~ vocab size				0.86542
+R^2 for KL score ~ time, vocab size			0.87797
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.89600
+
 
 Model: KL score for stop words ~ time, vocab size, time * vocab size
-R^2 = 0.21777765880660283
-constant:		coefficient = -34.54991062803795	p-value = 0.0
-time:			coefficient = 0.018947324348256155	p-value = 0.0
-vocab size:		coefficient = 8.163296683512787e-06	p-value = 0.0
-time * vocab size:	coefficient = -4.061813054486587e-09	p-value = 0.0
+constant:		coefficient = -4.54505e+01	normalized coefficient = 1.00055e+00	p-value = 0.00000e+00
+time:			coefficient = 2.43757e-02	normalized coefficient = -5.36605e-04	p-value = 0.00000e+00
+vocab size:		coefficient = 4.13381e-04	normalized coefficient = -9.10015e-06	p-value = 0.00000e+00
+time * vocab size:	coefficient = -2.05642e-07	normalized coefficient = 4.52699e-09	p-value = 0.00000e+00
 
-Under H_0: slope for old words = slope for new words, p-value = 0.0
-Under H_0: slope for old words = slope for stop words, p-value = 2.717603919677458e-12
-Under H_0: slope for new words = slope for stop words, p-value = 6.52222839003791e-06
+R^2 for KL score ~ time					0.21398
+R^2 for KL score ~ vocab size				0.20659
+R^2 for KL score ~ time, vocab size			0.21399
+R^2 for KL score ~ time, vocab size, time * vocab size:	0.21783
+
+
+Under H_0: slope for old words = slope for new words, p-value = 0.000000e+00
+Under H_0: slope for old words = slope for stop words, p-value = 3.363310e-12
+Under H_0: slope for new words = slope for stop words, p-value = 2.286703e-07
+
+
 
 
 
 WITHOUT VOCAB
 
 Model: KL score for old words ~ time
-R^2 = 0.5715342162899714
-constant:		coefficient = -45.90016670673047	p-value = 0.0
-time:			coefficient = 0.02390295188848975	p-value = 0.0
+constant:		coefficient = -4.59002e+01	normalized coefficient = 1.00052e+00	p-value = 0.00000e+00
+time:			coefficient = 2.39030e-02	normalized coefficient = -5.21031e-04	p-value = 0.00000e+00
 
 Model: KL score for new words at introduction ~ time
-R^2 = 0.8758379933326668
-constant:		coefficient = -57.543418558996095	p-value = 0.0
-time:			coefficient = 0.029820143761669287	p-value = 0.0
+constant:		coefficient = -5.75434e+01	normalized coefficient = 1.00052e+00	p-value = 0.00000e+00
+time:			coefficient = 2.98201e-02	normalized coefficient = -5.18489e-04	p-value = 0.00000e+00
 
 Model: KL score for stop words ~ time
-R^2 = 0.21398340600528676
-constant:		coefficient = -47.163622417829075	p-value = 0.0
-time:			coefficient = 0.025397550616200897	p-value = 0.0
+constant:		coefficient = -4.71636e+01	normalized coefficient = 1.00054e+00	p-value = 0.00000e+00
+time:			coefficient = 2.53976e-02	normalized coefficient = -5.38789e-04	p-value = 0.00000e+00
 
-Under H_0: slope for old words = slope for new words, p-value = 0.0
-Under H_0: slope for old words = slope for stop words, p-value = 2.291500322826323e-13
-Under H_0: slope for new words = slope for stop words, p-value = 0.0
+Under H_0: slope for old words = slope for new words, p-value = 0.000000e+00
+Under H_0: slope for old words = slope for stop words, p-value = 2.291500e-13
+Under H_0: slope for new words = slope for stop words, p-value = 0.000000e+00
+
+
 
 
 

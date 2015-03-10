@@ -528,10 +528,10 @@ with open(regression_output_filename, 'w') as fp:
                 if model == 'without vocab':
                     regressors = times
                 elif model == 'with vocab':
-                    counts = [ monthly_word_counts[d] for d in ds ]
-                    interaction = [ times[i] * counts[i]
+                    vocab = [ monthly_vocab_size[d] for d in ds ]
+                    interaction = [ times[i] * vocab[i]
                                     for i in range(len(times)) ]
-                    regressors = np.array([times, counts, interaction]).T
+                    regressors = np.array([times, vocab, interaction]).T
                 regressors = sm.add_constant(regressors)
                 results = sm.OLS(scores, regressors).fit()
 
@@ -544,7 +544,7 @@ with open(regression_output_filename, 'w') as fp:
                 fp.write('~ time')
                 if model == 'with vocab':
                     fp.write(', vocab size, time * vocab size')
-                fp.write('\nR^2 = {}\n'.format(results.rsquared))
+                fp.write('\n')
                 for i in range(len(results.params)):
                     if i == 0: regressor_name = 'constant:\t\t'
                     elif i == 1: regressor_name = 'time:\t\t\t'
@@ -556,12 +556,32 @@ with open(regression_output_filename, 'w') as fp:
                     p = 2 * (1 - scipy.stats.t.cdf(test_statistic,
                                                    results.df_resid))
 
-                    fp.write('{}coefficient = {}\tp-value = {}\n'
-                             .format(regressor_name, results.params[i], p))
+                    fp.write('{}'.format(regressor_name)
+                             + 'coefficient = {:.5e}\t'
+                               .format(results.params[i])
+                             + 'normalized coefficient = {:.5e}\t'
+                               .format(results.params[i] / sum(results.params))
+                             + 'p-value = {:.5e}\n'.format(p))
                 fp.write('\n')
-                
 
-                
+                # List R^2 for nested models.
+                if model == 'with vocab':
+                    submodels = {'time\t\t\t\t\t':times,
+                                 'vocab size\t\t\t\t':vocab,
+                                 'time, vocab size\t\t\t'
+                                  :np.array([times, vocab]).T}
+                    full_rsquared = results.rsquared
+
+                    for name in submodels.keys():
+                        rsquared = (sm.OLS(scores,
+                                           sm.add_constant(submodels[name]))
+                                    .fit().rsquared)
+                        fp.write('R^2 for KL score ~ {}{:.5f}\n'
+                                 .format(name, rsquared))
+                    fp.write('R^2 for KL score ~ time, vocab size, '
+                             + 'time * vocab size:\t{:.5f}\n\n\n'
+                               .format(full_rsquared))
+
                 # Unpack pertinent regression results.
                 resids = results.resid
                 intercepts[wordtype] = results.params[0]
@@ -632,9 +652,9 @@ with open(regression_output_filename, 'w') as fp:
                     p = (1 - scipy.stats.t.cdf(test_statistic, df)) * 2
                     fp.write('Under H_0: slope for {} words '
                              .format(wordtype_i)
-                             + '= slope for {} words, p-value = {}\n'
+                             + '= slope for {} words, p-value = {:5e}\n'
                              .format(wordtype_j, p))
-            fp.write('\n\n\n')
+            fp.write('\n\n\n\n\n')
 
 
 
