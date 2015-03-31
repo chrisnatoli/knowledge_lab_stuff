@@ -10,12 +10,12 @@ import scipy.stats
 
 def string_to_date(s):
     return (int(s[ : len('YYYY')]), int(s[len('YYYY-') : ]))
-    
+
 def remove_nones(xs):
     return [ x for x in xs if x is not None ]
 
 
-density = 0.8
+density = 0.9
 plots_directory = 'plots/{}_density/'.format(density)
 
 
@@ -48,7 +48,7 @@ with open(counts_filename) as fp:
     next(reader)
     monthly_word_counts = { string_to_date(row[0]) : int(row[1])
                             for row in reader }
-    
+
 # Unpack vocabulary size for each month.
 counts_filename = 'monthly_vocab_size.csv'
 monthly_vocab_size = dict()
@@ -84,7 +84,7 @@ for wordtype in wordtypes:
                        for score in tokens[1:] ]
             kl_scores[wordtype][word] = scores
             words[wordtype].append(word)
-    
+
     # Generate lists of KL scores, ignoring empty datapoints and
     # words that lack KL scores.
     flat_kl_scores[wordtype] = []
@@ -150,12 +150,12 @@ for wordtype in wordtypes[:2]:
     plt.savefig(plots_directory
                 + 'hist_of_{}_symKL_scores.png'.format(wordtype))
     plt.close()
-    
+
     plt.hist(kl_means[wordtype], bins=50)
     plt.savefig(plots_directory
                 + 'hist_of_{}_symKL_means.png'.format(wordtype))
     plt.close()
-    
+
     plt.hist(kl_stddevs[wordtype], bins=50)
     plt.savefig(plots_directory
                 + 'hist_of_{}_symKL_stddevs.png'.format(wordtype))
@@ -230,7 +230,7 @@ for row in new_words_table:
     word = row[new_words_header.index('word')]
     first = string_to_date(row[new_words_header.index('first appearance')])
     doc_freq = float(row[new_words_header.index('num months')])
-    total = len([ d for d in dates if d >= first ]) 
+    total = len([ d for d in dates if d >= first ])
     rel_doc_freqs[word] = doc_freq / total
 
 for z in [first_appearances, term_freqs, log_term_freqs, rel_term_freqs,
@@ -327,7 +327,7 @@ for colored_by in colored_bys:
             z = stopword_freqs
         elif colored_by == 'ltf' and wordtype == 'stop':
             z = log_stopword_freqs
-        
+
         # Normalize the color values so that they're in [0,1].
         if colored_by == 'tf':
             minn = min(list(term_freqs.values())
@@ -387,7 +387,7 @@ for new_logtf in np.random.choice(new_word_logtfs, size=sample_size):
                 ys.append(np.std(scores))
                 zs.append(old_logtf)
                 break
-            
+
 maxx = max(zs)
 minn = min(zs)
 colors = [ (z - minn) / (maxx - minn) for z in zs ]
@@ -401,7 +401,7 @@ m.set_array([0,1])
 cbar = plt.colorbar(m, ticks=[0,1])
 cbar.set_ticklabels(['{:.2f}'.format(minn), '{:.2f}'.format(maxx)])
 cbar.set_label('Log term frequency')
-        
+
 plt.xlabel('Mean KL score of a given word over time')
 plt.ylabel('Standard deviation of KL scores for a given word over time')
 
@@ -440,7 +440,7 @@ first_appearances = { row[new_words_header.index('word')]
                       : string_to_date(row[
                           new_words_header.index('first appearance')])
                       for row in new_words_table }
-for num_years in range(2,34):
+for num_years in range(1,34):
     partial_means = []
     partial_stddevs = []
     colors = []
@@ -457,7 +457,7 @@ for num_years in range(2,34):
             partial_stddevs.append(np.std(scores))
             colors.append(coolwarm((start[0]-1976)/(2000-1976)))
             areas.append((log_term_freqs[word] - 5)**2.5)
-    
+
     fig, ax = plt.subplots()
 
     ax.set_axis_bgcolor('0.25')
@@ -479,7 +479,7 @@ for num_years in range(2,34):
     plt.close()
 
 pdf.close()
-    
+
 
 
 
@@ -523,7 +523,7 @@ with open(regression_output_filename, 'w') as fp:
                             scores.append(score)
                             times.append(d[0] + (d[1]-1)/12)
                             ds.append(d)
-                            
+
                 # Fit an OLS model with intercept. Record slope and stderr.
                 if model == 'without vocab':
                     regressors = times
@@ -645,7 +645,7 @@ with open(regression_output_filename, 'w') as fp:
                 for (j, wordtype_j) in [ (j,t) for (j,t)
                                          in enumerate(wordtypes) if j>i ]:
                     diff = abs(slopes[wordtype_i] - slopes[wordtype_j])
-                    stderr = np.sqrt(stderrs[wordtype_i]**2 
+                    stderr = np.sqrt(stderrs[wordtype_i]**2
                                      + stderrs[wordtype_j]**2)
                     test_statistic = diff / stderr
                     df = num_points[wordtype_i] + num_points[wordtype_i] - 4
@@ -662,7 +662,7 @@ with open(regression_output_filename, 'w') as fp:
 
 # Time series plot of KL scores:
 fig, ax = plt.subplots()
-        
+
 # Plot the mean KL scores for three big batches of words
 # (where the mean is averaging across words within the batch
 # and across a single year):
@@ -817,7 +817,7 @@ ax.set_ylabel('Symmetric KL divergence')
 plt.tight_layout()
 plt.savefig(plots_directory + 'time_series_OLSfit.png', dpi=200)
 plt.close()
-    
+
 
 
 
