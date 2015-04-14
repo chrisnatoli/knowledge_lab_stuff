@@ -2,9 +2,9 @@ import csv
 import numpy as np
 import matplotlib
 import matplotlib.pylab as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import statsmodels.api as sm
 import scipy.stats
+import os
 
 
 
@@ -15,7 +15,7 @@ def remove_nones(xs):
     return [ x for x in xs if x is not None ]
 
 
-density = 0.9
+density = 0.8
 plots_directory = 'plots/{}_density/'.format(density)
 
 
@@ -434,13 +434,12 @@ plt.close()
 # word's time series, just look at the next n years. Check
 # out the colored scatterplot and the histograms of means and stddevs again.
 # Only do this for words introduced after 1975.
-pdf = PdfPages(plots_directory
-               + 'scatter_symKL_partial_mean_vs_std_colored_by_yr.pdf')
 first_appearances = { row[new_words_header.index('word')]
                       : string_to_date(row[
                           new_words_header.index('first appearance')])
                       for row in new_words_table }
-for num_years in range(1,34):
+pages = list(range(1,34))
+for num_years in pages:
     partial_means = []
     partial_stddevs = []
     colors = []
@@ -475,10 +474,15 @@ for num_years in range(1,34):
     plt.xlabel('Mean KL score of a given word over {} years'.format(num_years))
     plt.ylabel('Standard deviation of KL scores of a given word over {} years'
                .format(num_years))
-    plt.savefig(pdf, format='pdf')
+    plt.savefig('flipbook_{}.png'.format(num_years))
     plt.close()
 
-pdf.close()
+# String all the images into a single animation then delete the images.
+#os.system('avconv -y -r 2 -i flipbook_%d.png -b:v 4000k ' + plots_directory
+os.system('avconv -y -r 2 -i flipbook_%d.png -s 1600x1200 ' + plots_directory
+          + 'scatter_symKL_partial_mean_vs_std_colored_by_yr.mp4')
+for n in pages:
+    os.remove('flipbook_{}.png'.format(n))
 
 
 
@@ -801,7 +805,7 @@ for wordtype in wordtypes:
                 linewidth=2, alpha=0.7)
 
     # Then add a straight line fitted by OLS.
-    xs = [1976, 1999]
+    xs = [1976, 1999 + 11/12]
     ys = [ intercepts[wordtype] + slopes[wordtype] * x
            for x in xs ]
     ax.plot(xs, ys, color=color, linewidth=2, alpha=0.7, label=label)
