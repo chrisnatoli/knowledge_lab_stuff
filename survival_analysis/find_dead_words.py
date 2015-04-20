@@ -22,11 +22,11 @@ def preprocess(text):
 
 
 
-start_date = (1976,1)
+start_year = 1976
 
 directory = 'monthly_abstracts/'
-filenames = sorted([ f for f in os.listdir(directory)
-                     if filename_to_date(f) >= start_date ])
+filenames = sorted([ f for f in os.listdir(directory) ])
+
 
 # Read the post-1976 corpus into a dictionary that maps from a year
 # to a set containing all the unique words in that year.
@@ -46,20 +46,32 @@ for filename in filenames:
     print('Text for {} was read in {}'
           .format(date, datetime.now() - start_time))
 
-years = sorted(yearly_words.keys())
-
 print('All text was read in {}\n'.format(datetime.now() - the_beginning))
+
+years = sorted([ y for y in yearly_words.keys() if y >= start_year ])
+
+
+# Accumulate a set of candidate words that occur after and including 1976.
+candidates = set()
+for year in years:
+    candidates.update(yearly_words[year])
+print('Starting with {} candidates'.format(len(candidates)))
+
+
+# Subtract off words from years before 1976 to ensure that
+# words are not left-censored.
+for year in [ y for y in yearly_words.keys() if y < start_year ]:
+    candidates.subtract(yearly_words[year])
+print('{} candidates left after selecting for new words'
+      .format(len(candidates)))
 
 
 
 # Find words that died (i.e., no longer occur after cutoff year)
 # and that satisfy certain constraints to confirm their relevancy.
-cutoff_year = 2009#2005
-min_streak_length = 1#5
-candidates = set()
-print('Starting with {} candidates'.format(len(candidates)))
+cutoff_year = 2005
+min_streak_length = 5
 
-for year in years: candidates.update(yearly_words[year])
 for candidate in candidates.copy():
     start_time = datetime.now()
 
@@ -90,10 +102,6 @@ for candidate in candidates.copy():
 
 
 
-print('{} candidates remaining'.format(len(candidates)))
-
-
-
 # Remove any candidates that don't have at least one alphabet
 # character in them.
 for candidate in candidates.copy():
@@ -101,7 +109,8 @@ for candidate in candidates.copy():
         candidates.remove(candidate)
 
 
-#candidates = set(random.sample(candidates, 10)) # (for testing)
+
+print('{} candidates remaining'.format(len(candidates)))
 
 
 
@@ -135,7 +144,7 @@ for filename in filenames:
                     infrequent_words.remove(infreq_word)
                     del term_freqs[infreq_word]
 
-            print('Word frequency of {} from {} were computed in {}'
+            print('Word frequency of {} from {} was computed in {}'
                   .format(infreq_word, filename, datetime.now() - start_time))
 
     print('Word frequencies from {} were computed in {}'
