@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
-import random
+import resource
+import csv
 
 
 the_beginning = datetime.now()
@@ -24,13 +25,17 @@ def preprocess(text):
 
 start_year = 1976
 
-directory = 'monthly_abstracts/'
+directory = '/glusterfs/users/cnatoli/monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 
 
 # Read the post-1976 corpus into a dictionary that maps from a year
 # to a set containing all the unique words in that year.
+# Also create dictionaries from words to date of first appearance
+# ("time origin") and from words to the date of last appearance ("end-point").
 yearly_words = dict()
+time_origins = dict()
+end_points = dict()
 for filename in filenames:
     start_time = datetime.now()
 
@@ -38,15 +43,28 @@ for filename in filenames:
 
     with open(directory+filename) as fp:
         words = set(preprocess(fp.read()).split())
+
+        # First add words to the dictionary of yearly words.
         if date[0] in yearly_words.keys():
             yearly_words[date[0]].update(words)
         else:
             yearly_words[date[0]] = words
 
+        # Then update the time_origins and end_points dictionaries.
+        for word in words:
+            if word not in time_origins.keys():
+                time_origins[word] = date
+            end_points[word] = date
+
     print('Text for {} was read in {}'
           .format(date, datetime.now() - start_time))
+    print('MEM: {} KB'
+
+          .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 print('All text was read in {}\n'.format(datetime.now() - the_beginning))
+print('MEM: {} KB'
+      .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 years = sorted([ y for y in yearly_words.keys() if y >= start_year ])
 
@@ -56,14 +74,18 @@ candidates = set()
 for year in years:
     candidates.update(yearly_words[year])
 print('Starting with {} candidates'.format(len(candidates)))
+print('MEM: {} KB'
+      .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 
 # Subtract off words from years before 1976 to ensure that
 # words are not left-censored.
 for year in [ y for y in yearly_words.keys() if y < start_year ]:
-    candidates.subtract(yearly_words[year])
+    candidates = candidates.difference(yearly_words[year])
 print('{} candidates left after selecting for new words'
       .format(len(candidates)))
+print('MEM: {} KB'
+      .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 
 
@@ -99,7 +121,8 @@ for candidate in candidates.copy():
 
     print('Checked candidacy of {} in {}'
           .format(candidate, datetime.now() - start_time))
-
+    print('MEM: {} KB'
+          .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 
 # Remove any candidates that don't have at least one alphabet
@@ -111,12 +134,21 @@ for candidate in candidates.copy():
 
 
 print('{} candidates remaining'.format(len(candidates)))
+print('MEM: {} KB'
+      .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 
 
-# Also check that candidates exceed a minimum term frequency
+# Delete the yearly_words dictionary to free up memory.
+for key in list(yearly_words.keys()):
+    del yearly_words[key]
+del yearly_words
+
+
+
+# Check that candidates exceed a minimum term frequency
 # in post-1976 corpus.
-min_term_freq = 10
+min_term_freq = 40
 infrequent_words = candidates.copy()
 term_freqs = { word:0 for word in infrequent_words }
 
@@ -146,17 +178,33 @@ for filename in filenames:
 
             print('Word frequency of {} from {} was computed in {}'
                   .format(infreq_word, filename, datetime.now() - start_time))
+            print('MEM: {} KB'
+                  .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
     print('Word frequencies from {} were computed in {}'
           .format(filename, datetime.now() - start_time))
+    print('MEM: {} KB'
+          .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 # Remove the infrequent words from the list of candidates.
 for infreq_word in infrequent_words:
     if term_freqs[infreq_word] < min_term_freq:
         candidates.remove(infreq_word)
 
+print('Found {} candidates'.format(len(candidates)))
+
+
+
+# Save the list of candidates with their time origins and end-points.
+output_filename = 'dead_words.csv'
+candidates = sorted(list(candidates))
+with open(output_filename, 'w', newline='') as fp:
+    writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['word', 'time origin', 'end point'])
+    for word in candidates:
+        writer.writerow([word, time_origins[word], end_points[word]])
+
+
+
 print('\nEntire script finished in {}\n'
       .format(datetime.now() - the_beginning))
-
-print(candidates)
-print(len(candidates))
