@@ -59,7 +59,6 @@ for filename in filenames:
     print('Text for {} was read in {}'
           .format(date, datetime.now() - start_time))
     print('MEM: {} KB'
-
           .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 print('All text was read in {}\n'.format(datetime.now() - the_beginning))
@@ -92,7 +91,7 @@ print('MEM: {} KB'
 # Find words that died (i.e., no longer occur after cutoff year)
 # and that satisfy certain constraints to confirm their relevancy.
 cutoff_year = 2005
-min_streak_length = 5
+min_streak_length = 6
 
 for candidate in candidates.copy():
     start_time = datetime.now()
@@ -202,7 +201,11 @@ with open(output_filename, 'w', newline='') as fp:
     writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['word', 'time origin', 'end point'])
     for word in candidates:
-        writer.writerow([word, time_origins[word], end_points[word]])
+        origin_string = '{}-{}'.format(time_origins[word][0],
+                                       time_origins[word][1])
+        end_string = '{}-{}'.format(end_points[word][0],
+                                    end_points[word][1])
+        writer.writerow([word, origin_string, end_string])
 
 
 
