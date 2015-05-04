@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import resource
 import csv
+import random
 
 
 the_beginning = datetime.now()
@@ -26,7 +27,20 @@ def preprocess(text):
 start_year = 1976
 
 directory = '/glusterfs/users/cnatoli/monthly_abstracts/'
-filenames = sorted([ f for f in os.listdir(directory) ])
+filenames = sorted([ f for f in os.listdir(directory) ],
+                     key=filename_to_date)
+
+cutoff_year = 2005
+min_streak_length = 6
+min_term_freq = 40
+min_doc_freq = 12
+random_sample = False
+print('Cutoff year is {}'.format(cutoff_year))
+print('Minimum streak length = {}'.format(min_streak_length))
+print('Minimum term frequency = {}'.format(min_term_freq))
+print('Minimum document frequency = {}'.format(min_doc_freq))
+if random_sample: print('Using a randomly selected, smaller sample')
+
 
 
 # Read the post-1976 corpus into a dictionary that maps from a year
@@ -68,6 +82,7 @@ print('MEM: {} KB'
 years = sorted([ y for y in yearly_words.keys() if y >= start_year ])
 
 
+
 # Accumulate a set of candidate words that occur after and including 1976.
 candidates = set()
 for year in years:
@@ -75,6 +90,7 @@ for year in years:
 print('Starting with {} candidates'.format(len(candidates)))
 print('MEM: {} KB'
       .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
+
 
 
 # Subtract off words from years before 1976 to ensure that
@@ -89,10 +105,7 @@ print('MEM: {} KB'
 
 
 # Find words that died (i.e., no longer occur after cutoff year)
-# and that satisfy certain constraints to confirm their relevancy.
-cutoff_year = 2005
-min_streak_length = 6
-
+# and that have a streak lasting at least min_streak_length years.
 for candidate in candidates.copy():
     start_time = datetime.now()
 
@@ -138,6 +151,13 @@ print('MEM: {} KB'
 
 
 
+# Take a random sample to make a toy sample of dead words
+# on which to test the Cox reression model.
+if random_sample:
+    candidates = set(random.sample(candidates, 1000))
+
+
+
 # Delete the yearly_words dictionary to free up memory.
 for key in list(yearly_words.keys()):
     del yearly_words[key]
@@ -146,10 +166,14 @@ del yearly_words
 
 
 # Check that candidates exceed a minimum term frequency
-# in post-1976 corpus.
-min_term_freq = 40
+# and a minimum document frequency (where a document is a collection of
+# abstracts in a give month) in post-1976 corpus.
+# Simultaneously, look for words that are absent for gaps longer than
+# 12 months.
 infrequent_words = candidates.copy()
 term_freqs = { word:0 for word in infrequent_words }
+doc_freqs = { word:0 for word in infrequent_words }
+gap_lengths = { word:0 for word in infrequent_words }
 
 for filename in filenames:
     start_time = datetime.now()
@@ -158,32 +182,60 @@ for filename in filenames:
     # to prevent computing frequencies (an expensive operation) of
     # words that are known to be sufficiently frequent.
     # If a word is not frequent enough in a given file to be removed
-    # from the set of infrequent words, then add its word frequency
-    # to the cumulative term_freqs dictionary.
+    # from the set of infrequent words, then add its frequencies
+    # to the cumulative term_freqs and doc_freqs dictionaries.
     with open(directory+filename) as fp:
         words = preprocess(fp.read()).split()
         for infreq_word in infrequent_words.copy():
             start_time2 = datetime.now()
 
-            count = words.count(infreq_word)
-            if count >= min_term_freq:
+            tf = words.count(infreq_word)
+            df = 1 if tf > 0 else 0
+
+            # First check if minimum term frequency is exceeded.
+            if tf >= min_term_freq:
                 infrequent_words.remove(infreq_word)
                 del term_freqs[infreq_word]
+                del doc_freqs[infreq_word]
             else:
-                term_freqs[infreq_word] += count
+                term_freqs[infreq_word] += tf
                 if term_freqs[infreq_word] >= min_term_freq:
                     infrequent_words.remove(infreq_word)
                     del term_freqs[infreq_word]
+                    del doc_freqs[infreq_word]
 
-            print('Word frequency of {} from {} was computed in {}'
-                  .format(infreq_word, filename, datetime.now() - start_time))
+            # If not, then check if minimum doc frequency is exceeded.
+            if infreq_word in doc_freqs.keys():
+                doc_freqs[infreq_word] += df
+                if doc_freqs[infreq_word] >= min_doc_freq:
+                    infrequent_words.remove(infreq_word)
+                    del term_freqs[infreq_word]
+                    del doc_freqs[infreq_word]
+
+            print('Word frequencies of {} from {} were computed in {}'
+                  .format(infreq_word, filename, datetime.now() - start_time2))
             print('MEM: {} KB'
                   .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
-    print('Word frequencies from {} were computed in {}'
-          .format(filename, datetime.now() - start_time))
-    print('MEM: {} KB'
-          .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
+        # Separately check for words with long gap lengths and remove them
+        # from future computations.
+        for candidate in candidates.copy():
+            if candidate in words:
+                gap_lengths[candidate] = 0
+            else:
+                gap_lengths[candidate] += 1
+            if gap_lengths[candidate] >= 12:
+                candidates.remove(candidate)
+                del gap_lengths[candidate]
+                if candidate in infrequent_words:
+                    infrequent_words.remove(infreq_word)
+                    del term_freqs[candidate]
+                    del doc_freqs[candidate]
+
+        print('Word frequencies from {} were computed in {}'
+              .format(filename, datetime.now() - start_time))
+        print('MEM: {} KB'
+              .format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
 
 # Remove the infrequent words from the list of candidates.
 for infreq_word in infrequent_words:
@@ -194,7 +246,7 @@ print('Found {} candidates'.format(len(candidates)))
 
 
 
-# Save the list of candidates with their time origins and end-points.
+# Write the list of candidates to file with their time origins and end-points.
 output_filename = 'dead_words.csv'
 candidates = sorted(list(candidates))
 with open(output_filename, 'w', newline='') as fp:
