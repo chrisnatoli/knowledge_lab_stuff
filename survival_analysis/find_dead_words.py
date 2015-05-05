@@ -111,7 +111,7 @@ for candidate in candidates.copy():
 
     candidate_failed = False
 
-    # First check if the candidate occured after the cutoff_year.
+    # First check if the candidate occured during or after the cutoff_year.
     for year in [ y for y in years if y >= cutoff_year ]:
         if candidate in yearly_words[year]:
             candidates.remove(candidate)
@@ -228,7 +228,7 @@ for filename in filenames:
                 candidates.remove(candidate)
                 del gap_lengths[candidate]
                 if candidate in infrequent_words:
-                    infrequent_words.remove(infreq_word)
+                    infrequent_words.remove(candidate)
                     del term_freqs[candidate]
                     del doc_freqs[candidate]
 
