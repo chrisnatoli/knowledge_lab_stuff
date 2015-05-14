@@ -13,7 +13,7 @@ with open(input_filename) as fp:
         time_origin = row[header.index('time origin')]
         end_point = row[header.index('end point')]
 
-        for val in ['kl', 'tfidf']:
+        for val in ['kl', 'tfidf', 'rtf']:
             time_origin_index = header.index(val + time_origin)
             end_point_index = header.index(val + end_point)
 
@@ -42,7 +42,7 @@ cutoff_year = 2005
 with open(output_filename, 'w') as fp:
     writer = csv.writer(fp, delimiter=',')
     writer.writerow(['word', 'time1', 'time2', 'status',
-                     'kl score', 'tfidf', 'time'])
+                     'kl score', 'tfidf', 'rtf', 'time'])
     for row in data:
         for year in range(start_year, cutoff_year):
             for month in range(1,13):
@@ -56,4 +56,5 @@ with open(output_filename, 'w') as fp:
                                    else 0,
                                  row[header.index('kl' + datestr)],
                                  row[header.index('tfidf' + datestr)],
+                                 row[header.index('rtf' + datestr)],
                                  header.index('kl' + datestr) - 2])

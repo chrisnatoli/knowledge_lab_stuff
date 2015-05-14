@@ -10,7 +10,10 @@ the_beginning = datetime.now()
 
 dead_words_filename = 'dead_words_streak6_tf40.csv'
 kl_directory = '../data/medline_monthly-KL/'
-tfidf_directory = '../data/monthly_abstracts_with_tf/'
+tf_directory = '../data/monthly_abstracts_with_tf/'
+kl_suffix = '.txt.csv'
+tfidf_suffix = '.txt.tfidf'
+rtf_suffix = '.txt.tf.csv'
 
 
 
@@ -19,9 +22,9 @@ def datestr_to_date(string):
     return (int(string[:4]), int(string[6:]))
 
 # '1916-2.txt.csv' -> (1916, 2)
-def filename_to_date(filename, extension):
+def filename_to_date(filename, suffix):
     return (int(filename[ : len('YYYY')]),
-            int(filename[len('YYYY-') : -len(extension)]))
+            int(filename[len('YYYY-') : -len(suffix)]))
 
 
 
@@ -42,14 +45,14 @@ with open(dead_words_filename) as fp:
 # If present then record its KL score, otherwise record that it's missing.
 start_year = 1976
 kl_filenames = sorted([ f for f in os.listdir(kl_directory)
-                        if ('.txt.csv' in f and
-                            filename_to_date(f,'.txt.csv')[0] >= start_year) ],
-                      key=lambda f: filename_to_date(f, '.txt.csv'))
+                        if (kl_suffix in f and
+                            filename_to_date(f, kl_suffix)[0] >= start_year) ],
+                      key=lambda f: filename_to_date(f, kl_suffix))
 
 for filename in kl_filenames:
     start_time = datetime.now()
 
-    date = filename_to_date(filename, '.txt.csv')
+    date = filename_to_date(filename, kl_suffix)
 
     with open(kl_directory + filename) as fp:
         reader = csv.reader(fp, delimiter=',')
@@ -89,17 +92,17 @@ for row in dead_words_table[:]:
 
 
 # Also add tfidf data to the table.
-tfidf_filenames = sorted([ f for f in os.listdir(tfidf_directory)
-                           if ('.txt.tfidf' in f and
-                               filename_to_date(f, '.txt.tfidf')[0]
+tfidf_filenames = sorted([ f for f in os.listdir(tf_directory)
+                           if (tfidf_suffix in f and
+                               filename_to_date(f, tfidf_suffix)[0]
                                >= start_year) ],
-                         key=lambda f: filename_to_date(f, '.txt.tfidf'))
+                         key=lambda f: filename_to_date(f, tfidf_suffix))
 for filename in tfidf_filenames:
     start_time = datetime.now()
-    date = filename_to_date(filename, '.txt.tfidf')
-    with open(tfidf_directory + filename) as fp:
+    date = filename_to_date(filename, tfidf_suffix)
+    with open(tf_directory + filename) as fp:
         reader = csv.reader(fp, delimiter=',')
-        tfidf_rows = [ row for row in reader ]
+        word_to_tfidf = { row[1]:row[-1] for row in reader }
         for dead_words_row in dead_words_table:
             #  Do not look for the word if date isn't within word's lifespan.
             if (date < dead_words_row[header.index('time origin')]
@@ -108,16 +111,51 @@ for filename in tfidf_filenames:
                 continue
 
             dead_word = dead_words_row[header.index('word')]
-            for tfidf_row in tfidf_rows:
-                if tfidf_row[1] == dead_word:
-                    dead_words_row.append(tfidf_row[-1])
-                    break
+            if dead_word in word_to_tfidf.keys():
+                dead_words_row.append(word_to_tfidf[dead_word])
             else:
                 dead_words_row.append('')
 
     header.append('tfidf{}-{}'.format(date[0], date[1]))
 
-    print('KL scores from {} were read in {}'
+    print('TFIDFs from {} were read in {}'
+          .format(date, datetime.now() - start_time))
+
+
+
+# Also add rtf data to the table.
+rtf_filenames = sorted([ f for f in os.listdir(tf_directory)
+                         if (rtf_suffix in f and
+                             filename_to_date(f, rtf_suffix)[0]
+                             >= start_year) ],
+                       key=lambda f: filename_to_date(f, rtf_suffix))
+for filename in rtf_filenames:
+    start_time = datetime.now()
+    date = filename_to_date(filename, rtf_suffix)
+    with open(tf_directory + filename) as fp:
+        key_value_pairs = (fp.read().replace('{','').replace('}','')
+                           .split(',')[1:])
+        word_to_rtf = dict()
+        for pair in key_value_pairs:
+            (word, rtf) = pair.split(':')
+            word_to_rtf[word.strip()[1:-1]] = rtf.strip()
+
+        for dead_words_row in dead_words_table:
+            #  Do not look for the word if date isn't within word's lifespan.
+            if (date < dead_words_row[header.index('time origin')]
+                or date > dead_words_row[header.index('end point')]):
+                dead_words_row.append('')
+                continue
+
+            dead_word = dead_words_row[header.index('word')]
+            if dead_word in word_to_rtf.keys():
+                dead_words_row.append(word_to_rtf[dead_word])
+            else:
+                dead_words_row.append('')
+
+    header.append('rtf{}-{}'.format(date[0], date[1]))
+
+    print('RTFs from {} were read in {}'
           .format(date, datetime.now() - start_time))
 
 
