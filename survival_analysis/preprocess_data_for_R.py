@@ -42,7 +42,8 @@ cutoff_year = 2005
 
 with open(output_filename, 'w') as fp:
     writer = csv.writer(fp, delimiter=',')
-    writer.writerow(['word', 'time1', 'time2', 'status', 'kl score',
+    writer.writerow(['word', 'time.origin',
+                     'time1', 'time2', 'status', 'kl score',
                      'tfidf', 'exp.tfidf', 'log.tfidf',
                      'rtf', 'exp.rtf', 'log.rtf',
                      'time', 'age'])
@@ -54,6 +55,7 @@ with open(output_filename, 'w') as fp:
                     continue
                 writer.writerow([
                     row[header.index('word')], # word
+                    row[header.index('time origin')], # time origin
                     header.index('kl' + datestr) - 3, # time1
                     header.index('kl' + datestr) - 2, # time2
                     1 if datestr == row[header.index('end point')]
