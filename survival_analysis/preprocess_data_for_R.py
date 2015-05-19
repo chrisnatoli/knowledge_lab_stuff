@@ -1,4 +1,5 @@
 import csv
+from numpy import exp, log
 
 input_filename = 'dead_words_with_covariates.csv'
 output_filename = 'dead_words_with_covariates_interpolated.csv'
@@ -41,20 +42,30 @@ cutoff_year = 2005
 
 with open(output_filename, 'w') as fp:
     writer = csv.writer(fp, delimiter=',')
-    writer.writerow(['word', 'time1', 'time2', 'status',
-                     'kl score', 'tfidf', 'rtf', 'time'])
+    writer.writerow(['word', 'time1', 'time2', 'status', 'kl score',
+                     'tfidf', 'exp.tfidf', 'log.tfidf',
+                     'rtf', 'exp.rtf', 'log.rtf',
+                     'time', 'age'])
     for row in data:
         for year in range(start_year, cutoff_year):
             for month in range(1,13):
                 datestr = '{}-{}'.format(year, month)
                 if row[header.index('kl' + datestr)] == '':
                     continue
-                writer.writerow([row[header.index('word')],
-                                 header.index('kl' + datestr) - 3,
-                                 header.index('kl' + datestr) - 2,
-                                 1 if datestr == row[header.index('end point')]
-                                   else 0,
-                                 row[header.index('kl' + datestr)],
-                                 row[header.index('tfidf' + datestr)],
-                                 row[header.index('rtf' + datestr)],
-                                 header.index('kl' + datestr) - 2])
+                writer.writerow([
+                    row[header.index('word')], # word
+                    header.index('kl' + datestr) - 3, # time1
+                    header.index('kl' + datestr) - 2, # time2
+                    1 if datestr == row[header.index('end point')]
+                        else 0, # status
+                    row[header.index('kl' + datestr)], # kl score
+                    row[header.index('tfidf' + datestr)], # tfidf
+                    exp(float(row[header.index('tfidf' + datestr)])), # e^tfidf
+                    log(float(row[header.index('tfidf' + datestr)])), # e^tfidf
+                    row[header.index('rtf' + datestr)], # rtf
+                    exp(float(row[header.index('rtf' + datestr)])), # e^rtf
+                    log(float(row[header.index('rtf' + datestr)])), # e^rtf
+                    header.index('kl' + datestr) - 2, # time
+                    header.index('kl' + datestr) - # age
+                        header.index('kl' + row[header.index('time origin')])
+                    ])
