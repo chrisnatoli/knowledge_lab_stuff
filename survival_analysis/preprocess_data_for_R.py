@@ -44,9 +44,7 @@ with open(output_filename, 'w') as fp:
     writer = csv.writer(fp, delimiter=',')
     writer.writerow(['word', 'time.origin',
                      'time1', 'time2', 'status', 'kl score',
-                     'tfidf', 'exp.tfidf', 'log.tfidf',
-                     'rtf', 'exp.rtf', 'log.rtf',
-                     'time', 'age'])
+                     'tfidf', 'rtf', 'time', 'age'])
     for row in data:
         for year in range(start_year, cutoff_year):
             for month in range(1,13):
@@ -62,11 +60,7 @@ with open(output_filename, 'w') as fp:
                         else 0, # status
                     row[header.index('kl' + datestr)], # kl score
                     row[header.index('tfidf' + datestr)], # tfidf
-                    exp(float(row[header.index('tfidf' + datestr)])), # e^tfidf
-                    log(float(row[header.index('tfidf' + datestr)])), # e^tfidf
                     row[header.index('rtf' + datestr)], # rtf
-                    exp(float(row[header.index('rtf' + datestr)])), # e^rtf
-                    log(float(row[header.index('rtf' + datestr)])), # e^rtf
                     header.index('kl' + datestr) - 2, # time
                     header.index('kl' + datestr) - # age
                         header.index('kl' + row[header.index('time origin')])
