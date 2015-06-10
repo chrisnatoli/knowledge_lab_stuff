@@ -8,7 +8,7 @@ the_beginning = datetime.now()
 
 
 
-dead_words_filename = 'dead_words_streak6_tf40.csv'
+dead_words_filename = 'dead_words_streak4_tf20.csv'
 kl_directory = '../data/medline_monthly-KL/'
 tf_directory = '../data/monthly_abstracts_with_tf/'
 kl_suffix = '.txt.csv'
@@ -18,8 +18,7 @@ rtf_suffix = '.txt.tf.csv'
 
 
 def datestr_to_date(string):
-    string = string[1:-1]
-    return (int(string[:4]), int(string[6:]))
+    return (int(string[: len('YYYY')]), int(string[len('YYYY-'):]))
 
 # '1916-2.txt.csv' -> (1916, 2)
 def filename_to_date(filename, suffix):
