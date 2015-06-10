@@ -1,0 +1,58 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+
+\newcommand\prn[1]{\left( #1 \right)}
+\newcommand\bkt[1]{\left[ #1 \right]}
+\newcommand\set[1]{\left\{ #1 \right\}}
+\newcommand\abs[1]{\left| #1 \right|}
+\newcommand\corpus{\text{corpus}}
+\newcommand\KL{\text{KL}}
+
+\pagestyle{empty}
+
+\frenchspacing
+
+\begin{document}
+
+Notation:
+\begin{itemize}
+    \item Denote the set of vocabulary by $V$ and the target word by $t\in V$.
+    \item Denote the number of occurrences of a word $w\in V$ in the context of $t$ (i.e., in all sentences containing $t$) by $n_w$.
+    \item Denote the number of occurrences of $w$ in the entire corpus, i.e., the raw term frequency of $w$, by $N_w$.
+    \item Let $T=\prn{n_w+\frac12}_{w\in V}$ be called the target vector and let $B=\prn{N_w+\frac12}_{w\in V}$ be called the background vector.
+    \item Let $T'=\frac{1}{\|T\|}T$ and $B'=\frac{1}{\|B\|}B$, where $\|\cdot\|$ is the $\ell_1$-norm, i.e., $\|(x_1,\ldots,x_n)\|=x_1+\cdots+x_n$.
+    \item Let $C$ be the size of the corpus and let $p_w=\frac{N_w}{C}$.
+\end{itemize}
+
+Assume that the proportion $p_w$ of word $w$ is constant with respect to the size of the corpus, i.e., $\frac{\partial p_w}{\partial C}=0$.
+Since it is empirically the case that $|V|$ is linear in $C$, i.e., $|V|=kC$, we have
+\begin{align*}
+\|B\|
+&=\sum_{w\in V}\prn{N_W+\frac12}
+=\sum_{w\in V}\prn{p_wC+\frac12}
+=C\sum_{w\in V}p_w+\frac12|V|
+=\prn{1+\frac12k}C\\
+\|T\|
+&=\sum_{u\in V}\prn{n_u+\frac12}
+=\prn{\sum_{u\in V}n_u}+\frac12|V|
+=\tau+\frac12kC,
+\end{align*}
+where $\tau=\sum_{u\in V}n_u$ is the number of words (counting multiplicity) appearing in all sentences containing the target $t$. 
+It is likely that $\frac{\partial\tau}{\partial C}>0$ since $\frac{\partial n_w}{\partial C}>0$ probably holds for almost all $w$.
+Then
+\begin{align*}
+    KL
+    &=\sum_{w\in V}\prn{T'_w\log\frac{T'_w}{B'_w}+B'_w\log\frac{B'_w}{T'_w}}\\
+    &=\sum_{w\in V}\prn{\prn{\frac{n_w+\frac12}{\|T\|}}\log\frac{\prn{\frac{n_w+\frac12}{\|T\|}}}{\prn{\frac{N_w+\frac12}{\|B\|}}}+\prn{\frac{N_w+\frac12}{\|B\|}}\log\frac{\prn{\frac{N_w+\frac12}{\|B\|}}}{\prn{\frac{n_w+\frac12}{\|T\|}}}}\\
+    &=\sum_{w\in V}\prn{\prn{\frac{n_w+\frac12}{\tau+\frac12kC}}\log\frac{\prn{\frac{n_w+\frac12}{\tau+\frac12kC}}}{\prn{\frac{p_wC+\frac12}{\prn{1+\frac12k}C}}}+\prn{\frac{p_wC+\frac12}{\prn{1+\frac12k}C}}\log\frac{\prn{\frac{p_wC+\frac12}{\prn{1+\frac12k}C}}}{\prn{\frac{n_w+\frac12}{\tau+\frac12kC}}}}.
+\end{align*}
+The problem is, how do $n_w$ and $\tau$ vary (stochastically) with $C$?
+
+\end{document}
