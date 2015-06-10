@@ -4,7 +4,7 @@ library("survival")
 
 dead.words <- read.csv(file="dead_words_with_covariates_interpolated.csv",
                        head=TRUE, sep=",")
-
+dead.words <- na.omit(dead.words) # Remove rows with missing data.
 
 # Transform some variables.
 dead.words$log.tfidf = log(dead.words$tfidf)
@@ -18,22 +18,37 @@ dead.words$sqrt.age = sqrt(dead.words$age)
 
 
 # Run some cox regressions and keep the last one in memory.
-coxph(Surv(time1, time2, status) ~ sqrt.age + kl.score * sqrt.age
-                                   + log.tfidf * sqrt.age
-                                   + log.rtf * sqrt.age,
-             data=dead.words)
-coxph(Surv(time1, time2, status) ~ sqrt.age + kl.score * sqrt.age
-                                   + centered.tfidf * sqrt.age
-                                   + centered.rtf * sqrt.age
-                                   + kl.score:centered.tfidf
-                                   + kl.score:centered.rtf
-                                   + centered.tfidf:centered.rtf,
-             data=dead.words)
+cat("LARGE MODEL\n")
+fit <- coxph(Surv(time1, time2, status) ~ sqrt.age + kl.score * sqrt.age
+                                          + centered.tfidf * sqrt.age
+                                          + centered.rtf * sqrt.age
+                                          + kl.score:centered.tfidf
+                                          + kl.score:centered.rtf
+                                          + centered.tfidf:centered.rtf,
+             data=dead.words, control = coxph.control(iter.max = 1e6))
+print(fit)
+large_model_loglik <- summary(fit)$loglik[2]
+large_model_df <- summary(fit)$logtest[2]
+
+cat("\n\nSMALL MODEL\n")
 fit <- coxph(Surv(time1, time2, status) ~ sqrt.age + kl.score * sqrt.age
                                           + centered.tfidf * sqrt.age
                                           + centered.rtf * sqrt.age,
-             data=dead.words)
+             data=dead.words, control = coxph.control(iter.max = 1e7))
 print(fit)
+
+cat("\n\nDIAGNOSTICS\n")
+cat(sprintf("Cox & Snell pseudo-R^2 = %f; max possible R^2 = %f\n",
+            summary(fit)$rsq[1], summary(fit)$rsq[2]))
+cat(sprintf("Normalization: Cox & Snell R^2 / max possible R^2 = %f\n\n",
+            summary(fit)$rsq[1] / summary(fit)$rsq[2]))
+#cat(sprintf("AIC = %f\n", extractAIC(fit)[2]))
+small_model_loglik <- summary(fit)$loglik[2]
+small_model_df <- summary(fit)$logtest[2]
+deviance <- -2 * (small_model_loglik - large_model_loglik)
+pvalue <- 1 - pchisq(deviance, df=large_model_df - small_model_df)
+cat(sprintf("Under H_0 where small model is as good as large model, p = %f\n\n",
+            pvalue))
 
 
 
@@ -46,8 +61,9 @@ num_deaths = sum(dead.words$status)
 num_censored = sample_size - num_deaths
 p = min(num_deaths, num_censored) / (num_deaths + num_censored)
 suggested_sample_size = 10 * num_predictors / p
-cat(sprintf("Sample size is %d; suggested sample size is %f.\n",
+cat(sprintf("Sample size is %d; suggested sample size is %f.\n\n",
             sample_size, suggested_sample_size))
+
 
 
 
