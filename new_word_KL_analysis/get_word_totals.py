@@ -1,6 +1,6 @@
 import os
 
-directory = 'monthly_abstracts/'
+directory = '../data/monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 word_counts_filename = 'monthly_word_counts.csv'
 vocab_size_filename = 'monthly_vocab_size.csv'
@@ -17,7 +17,7 @@ def preprocess(text):
     for p in punctuation:
         text = text.replace(p,' {} '.format(p))
     return text
- 
+
 monthly_word_counts = []
 monthly_vocab_size = []
 for filename in filenames:

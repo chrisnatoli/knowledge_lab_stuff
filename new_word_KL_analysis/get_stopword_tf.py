@@ -3,7 +3,7 @@ from datetime import datetime
 
 the_beginning = datetime.now()
 
-directory = 'monthly_abstracts/'
+directory = '../data/monthly_abstracts/'
 corpus_filenames = sorted([ f for f in os.listdir(directory) ])
 stopwords_filename = 'stopwords.txt'
 output_filename = 'stopwords.csv'
@@ -15,7 +15,7 @@ def preprocess(text):
     for p in punctuation:
         text = text.replace(p,' {} '.format(p))
     return text
-    
+
 
 
 # Read in a set of stop words.

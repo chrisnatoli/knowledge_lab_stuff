@@ -7,7 +7,7 @@ import numpy as np
 
 the_beginning = datetime.now()
 
-directory = 'monthly_abstracts/'
+directory = '../data/monthly_abstracts/'
 corpus_filenames = sorted([ f for f in os.listdir(directory) ])
 new_words_filename = 'new_words_0.8density.csv'
 stopwords_filename = 'stopwords.txt'
@@ -26,7 +26,7 @@ def preprocess(text):
     for p in punctuation:
         text = text.replace(p,' {} '.format(p))
     return text
-    
+
 
 
 # Read the corpus into a dictionary that maps from a date to a set
@@ -67,7 +67,7 @@ with open(stopwords_filename) as fp:
 # -- they aren't in the list of new words that were found previously,
 # -- they aren't in a given list of stopwords,
 # -- they aren't present in every single month in the relevant interval of time,
-# -- they are in at least 90% of the documents in the relevant interval of time.
+# -- they are in at least 80% or 90% of the documents in the relevant interval of time.
 min_density = 0.8
 start_date = (1970,1)#(2007,3)#
 end_date = (2000,1)#(2009,1)#

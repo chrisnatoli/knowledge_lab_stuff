@@ -5,7 +5,7 @@ from datetime import datetime
 the_beginning = datetime.now()
 
 new_words_filename = 'new_words_0.8density.csv'
-kl_directory = 'medline_monthly-KL/'
+kl_directory = '../data/medline_monthly-KL/'
 new_words_header = ['word', 'first appearance', 'num months', 'term frequency']
 kl_header = ['term', 'KL(tf,co)', 'KL(co,tf)', 'sym_KL_div']
 

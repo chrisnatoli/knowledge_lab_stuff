@@ -2,7 +2,7 @@ library("survival")
 
 
 
-dead.words <- read.csv(file="dead_words_with_covariates_interpolated.csv",
+dead.words <- read.csv(file="dead_words_with_covariates.csv",
                        head=TRUE, sep=",")
 dead.words <- na.omit(dead.words) # Remove rows with missing data.
 
@@ -25,7 +25,7 @@ fit <- coxph(Surv(time1, time2, status) ~ sqrt.age + kl.score * sqrt.age
                                           + kl.score:centered.tfidf
                                           + kl.score:centered.rtf
                                           + centered.tfidf:centered.rtf,
-             data=dead.words, control = coxph.control(iter.max = 1e6))
+             data=dead.words, control = coxph.control(iter.max = 1e5))
 print(fit)
 large_model_loglik <- summary(fit)$loglik[2]
 large_model_df <- summary(fit)$logtest[2]

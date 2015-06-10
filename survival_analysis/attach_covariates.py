@@ -159,7 +159,6 @@ for filename in rtf_filenames:
 
 
 
-
 # Convert the representation of the time origin and end point of
 # each dead word from a tuple to a string.
 for row in dead_words_table:
@@ -169,12 +168,71 @@ for row in dead_words_table:
 
 
 
-# Write to file.
+# Interpolate the KL scores, TFIDFs, and RTFs across any gaps.
+# Use linear interpolation.
+interpolated_data = []
+for row in dead_words_table:
+    interpolated_row = row[:]
+    word = row[header.index('word')]
+    time_origin = row[header.index('time origin')]
+    end_point = row[header.index('end point')]
+
+    for val in ['kl', 'tfidf', 'rtf']:
+        time_origin_index = header.index(val + time_origin)
+        end_point_index = header.index(val + end_point)
+
+        # Linearly interpolate between each non-missing datapoint.
+        not_missing = [ index for index in range(len(row))
+                        if (time_origin_index <= index <= end_point_index
+                            and row[index] != '') ]
+        for j in range(len(not_missing)-1):
+            left_index = not_missing[j]
+            right_index = not_missing[j+1]
+            n = right_index - left_index
+
+            left_value = float(row[left_index])
+            right_value = float(row[right_index])
+
+            increment = (right_value - left_value) / n
+            for k in range(n):
+                kth_value = left_value + k * increment
+                interpolated_row[left_index + k] = kth_value
+
+    interpolated_data.append(interpolated_row)
+
+
+
+# Write to file so that it will be easy to read into R and to
+# plug into a Cox regression model. In particular, each row should
+# only be for one date, and thus words will repeat in multiple rows.
 output_filename = 'dead_words_with_covariates.csv'
-with open(output_filename, 'w', newline='') as fp:
-    writer = csv.writer(fp, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(header)
-    writer.writerows(dead_words_table)
+start_year = 1976
+cutoff_year = 2005
+with open(output_filename, 'w') as fp:
+    writer = csv.writer(fp, delimiter=',')
+    writer.writerow(['word', 'time.origin',
+                     'time1', 'time2', 'status', 'kl.score',
+                     'tfidf', 'rtf', 'time', 'age'])
+    for row in interpolated_data:
+        for year in range(start_year, cutoff_year):
+            for month in range(1,13):
+                datestr = '{}-{}'.format(year, month)
+                if row[header.index('kl' + datestr)] == '':
+                    continue
+                writer.writerow([
+                    row[header.index('word')], # word
+                    row[header.index('time origin')], # time origin
+                    header.index('kl' + datestr) - 3, # time1
+                    header.index('kl' + datestr) - 2, # time2
+                    1 if datestr == row[header.index('end point')]
+                        else 0, # status
+                    row[header.index('kl' + datestr)], # kl score
+                    row[header.index('tfidf' + datestr)], # tfidf
+                    row[header.index('rtf' + datestr)], # rtf
+                    header.index('kl' + datestr) - 2, # time
+                    header.index('kl' + datestr) - # age
+                        header.index('kl' + row[header.index('time origin')])
+                    ])
 
 
 

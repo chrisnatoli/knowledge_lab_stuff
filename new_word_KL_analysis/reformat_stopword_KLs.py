@@ -7,7 +7,7 @@ from datetime import datetime
 the_beginning = datetime.now()
 
 stopwords_filename = 'stopwords.txt'
-kl_directory = 'medline-KL_stopwords/'
+kl_directory = '../data/medline-KL_stopwords/'
 kl_header = ['term', 'KL(tf,co)', 'KL(co,tf)', 'sym_KL_div']
 
 # '1983-1.csv' maps to (1983,1)

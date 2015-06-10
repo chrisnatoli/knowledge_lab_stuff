@@ -6,7 +6,7 @@ import multiprocessing
 
 the_beginning = datetime.now()
 
-directory = 'monthly_abstracts/'
+directory = '../data/monthly_abstracts/'
 filenames = sorted([ f for f in os.listdir(directory) ])
 
 
@@ -27,7 +27,7 @@ def preprocess(text):
     for p in punctuation:
         text = text.replace(p,' {} '.format(p))
     return text
-    
+
 
 
 
@@ -127,7 +127,7 @@ pool = multiprocessing.Pool(processes=num_processes)
 pool.map(find_new_terms_in_dates, dates_partition)
 pool.close()
 pool.join()
-        
+
 # Remove any words that don't have at least one alphabet
 # character in them.
 for word in new_words[:]:
@@ -229,7 +229,7 @@ for sublist in filenames_partition:
 
     print('Frequencies for this sublist were computed in {}\n'
           .format(datetime.now()-start_time))
-    
+
 
 # Fix up the table to prepare for output.
 for row in table:

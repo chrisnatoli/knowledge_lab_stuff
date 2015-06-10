@@ -7,7 +7,7 @@ from datetime import datetime
 the_beginning = datetime.now()
 
 old_words_filename = 'old_words_0.8density.csv'
-kl_directory = 'medline_monthly-KL/'
+kl_directory = '../data/medline_monthly-KL/'
 kl_header = ['term', 'KL(tf,co)', 'KL(co,tf)', 'sym_KL_div']
 
 # '1983-1.txt.csv' maps to (1983,1)
